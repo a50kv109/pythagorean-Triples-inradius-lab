@@ -104,11 +104,13 @@ export function passesMillerRabinBase(n: bigint, base: bigint): boolean {
  * Generates deterministic additional bases purely in BigInt if probablePrimeRounds > 25n.
  */
 function buildDeterministicProbableBases(n: bigint, rounds: bigint): readonly bigint[] {
+  const basesSet = new Set<string>();
   const bases: bigint[] = [];
   let idx = 0n;
   for (const p of PROBABLE_PRIME_FIXED_BASES) {
     if (idx >= rounds) break;
-    if (p < n) {
+    if (p < n && !basesSet.has(p.toString())) {
+      basesSet.add(p.toString());
       bases.push(p);
       idx += 1n;
     }
@@ -120,8 +122,13 @@ function buildDeterministicProbableBases(n: bigint, rounds: bigint): readonly bi
   while (idx < rounds && span > 0n) {
     state = (state * 6364136223846793005n + 1442695040888963407n) & ((1n << 128n) - 1n);
     const candidate = 2n + (state % span);
-    bases.push(candidate);
-    idx += 1n;
+    const key = candidate.toString();
+    if (!basesSet.has(key) && candidate < n) {
+      basesSet.add(key);
+      bases.push(candidate);
+      idx += 1n;
+    }
+    if (span < rounds) break;
   }
 
   return bases;
