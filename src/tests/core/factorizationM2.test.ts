@@ -369,6 +369,19 @@ assert.throws(
   InvalidRadiusError
 );
 
+// Regression test: replacing one valid divisor with an invalid value (e.g. non-divisor) while preserving array length
+const r3TestRes = analyzeRadiusNumberTheory(3n);
+assert.ok(r3TestRes.divisorsOfTwoRSquared !== null);
+const tamperedDivs = [...r3TestRes.divisorsOfTwoRSquared];
+const idx6 = tamperedDivs.indexOf(6n);
+if (idx6 !== -1) {
+  tamperedDivs[idx6] = 5n; // 5 does not divide 18
+}
+assert.throws(
+  () => buildHyperbolaDivisorPairs(3n, tamperedDivs),
+  IncompleteFactorizationError
+);
+
 console.log('✓ Section 6: >2^53 BigInt radii, strict reproducibility, combinatorial limit guard, and invalid input rejection passed.');
 
 console.log('\n================================================================');

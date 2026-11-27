@@ -43,6 +43,29 @@ export function buildHyperbolaDivisorPairs(
     );
   }
 
+  let lastDiv = 0n;
+  for (const x of twoRSquaredDivisors) {
+    if (x <= 0n) {
+      throw new IncompleteFactorizationError(
+        twoR2,
+        `divisor ${x.toString()} must be positive`
+      );
+    }
+    if (twoR2 % x !== 0n) {
+      throw new IncompleteFactorizationError(
+        twoR2,
+        `divisor ${x.toString()} does not divide 2r^2 (${twoR2.toString()})`
+      );
+    }
+    if (x <= lastDiv) {
+      throw new IncompleteFactorizationError(
+        twoR2,
+        `divisors must be in strict ascending order and unique, got x=${x.toString()} after prev=${lastDiv.toString()}`
+      );
+    }
+    lastDiv = x;
+  }
+
   const pairs: HyperbolaDivisorPair[] = [];
   const seenX = new Set<bigint>();
   let prevX = 0n;
