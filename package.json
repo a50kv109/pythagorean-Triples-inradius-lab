@@ -12,7 +12,7 @@
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
-    "test": "tsx src/tests/geometry.test.ts && tsx src/tests/incenterPartition.test.ts && tsx src/tests/core/exactM1.test.ts && tsx src/tests/core/factorizationM2.test.ts && tsx src/tests/core/classificationM3.test.ts"
+    "test": "tsx src/tests/geometry.test.ts && tsx src/tests/incenterPartition.test.ts && tsx src/tests/core/exactM1.test.ts && tsx src/tests/core/factorizationM2.test.ts && tsx src/tests/core/classificationM3.test.ts && tsx src/tests/core/spornFacetM4S1.test.ts && tsx src/tests/core/berggrenFacetM4S2.test.ts && tsx src/tests/core/classProfileFacetM4S3.test.ts"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",

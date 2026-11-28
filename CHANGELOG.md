@@ -2,6 +2,29 @@
 
 Все заметные изменения в проекте документируются в этом файле.
 
+## [M4 — Structural Facets Completed] — 2026-11-28
+
+### Завершено (`M4-S1`, `M4-S2`, `M4-S3` + синхронизация документации)
+- **Состав пакета M4 (`src/core/facets/`):**
+  - **M4-S1 (`spornFacet.ts` — `SpornFacet`, ACCEPTED):** точные нормированные координаты Спорна (`spornX`, `spornY`), базовый радиус луча $r_0 = r/k$, режим чётности (`X0_ODD` / `X0_EVEN`), целочисленный классификатор 4 зон (`classifySpornZone`), точная рациональная геометрия (`tanHalfA`, `tanHalfB`, `sinA`, `cosA`, `tanA`, `formT`, `asymQ`, `normS`, `normP = P/r = 2 * normS`), инварианты `SF-INV-01..06` и инвариантность предка `SF-INV-07`.
+  - **M4-S2 (`berggrenFacet.ts` — `BerggrenFacet`, ACCEPTED):** операторы троичного дерева Берггрена (`stepA1`, `stepA2`, `stepA3`, `stepBerggren`), однозначный спуск к родителю по зоне Спорна (`stepParent`, `requireBerggrenParent`), двусторонняя адресация `canonWord` ↔ `rawWord` (`canonWordToRawWord`, `rawWordToCanonWord`, `applyCanonWord`, `applyRawWord`), наследование примитивного предка для масштабированных троек ($k > 1$, `appliesToPrimitiveAncestor = true`) и инварианты `BF-INV-01..06`.
+  - **M4-S3 (`classProfileFacet.ts` — `ClassProfileFacet`, ACCEPTED):** агрегированный профиль класса (`buildClassProfileFacet`, `verifyClassProfileInvariants`) поверх M3 + S1 + S2 со строгой биекцией по `tripleId`, раздельными популяциями `allTriples` ($N(r)$) и `primitiveTriples` ($T(r)$), сбалансированным попарным суммированием дробей `ExactRational`, гистограммами зон, индикатором сжатия $c_{\min} < 5r$, глубинами дерева строго по примитивным тройкам и инвариантами `CPF-INV-01..12`.
+- **Новые и обновлённые файлы M4:**
+  - Исходный код: `src/core/facets/types.ts`, `src/core/facets/errors.ts`, `src/core/facets/spornFacet.ts`, `src/core/facets/berggrenFacet.ts`, `src/core/facets/classProfileFacet.ts`, `src/core/facets/index.ts`.
+  - Тесты: `src/tests/core/spornFacetM4S1.test.ts`, `src/tests/core/berggrenFacetM4S2.test.ts`, `src/tests/core/classProfileFacetM4S3.test.ts`, `package.json` (`scripts.test`).
+  - Документация и контрольная точка: `README.md`, `README_RU.md`, `CHANGELOG.md`, `docs/architecture/SYSTEM_ARCHITECTURE.md`, `docs/architecture/MODULE_BOUNDARIES.md`, `docs/architecture/M4_API_REFERENCE.md`, `docs/mathematics/M4_MATHEMATICAL_SPECIFICATION.md`, `docs/development/DEVELOPMENT_ROADMAP.md`, `docs/development/IMPLEMENTATION_STATUS.md`, `docs/development/VERIFICATION_POLICY.md`, `docs/development/M4_VERIFICATION_AND_TESTS.md`, `M4_STRUCTURAL_FACETS_FINAL.md`.
+- **Результаты верификации:** `npm test` (все 8 наборов тестов: геометрия, разбиение инцентром, M1, M2, M3, M4-S1, M4-S2, M4-S3) — **PASS**; `npx tsc --noEmit` — **0 ошибок**; `npm run build` (`vite build`) — **PASS**; статический скан `src/core/facets/` на `Number()`/`Math.*`/`float64` — **0 совпадений**.
+- **Известные неблокирующие замечания:**
+  1. В `berggrenFacetM4S2.test.ts` секция 2 явно перечисляет тройки-потомки для `(5,12,13)`, `(8,15,17)` и `(7,24,25)` вместо `A2(root) = (20,21,29)`, однако все 3 потомка `A2(root)` (`(36,77,85)`, `(119,120,169)`, `(39,80,89)`) проверены в секциях 9–10 и приёмке S2.
+  2. `computeBerggrenFacetForTriple` и `verifyBerggrenFacetInvariants` воспроизводят полный путь от корня за $O(d) \le O(r_0)$, что приемлемо для текущего исследовательского диапазона, но при масштабировании к $r_0 \gg 10^4$ граничная ветвь $x_0 = 1$ даёт линейный рост числа шагов.
+  3. Среда workspace не содержит `.git`, поэтому локальный git-коммит/тег в данной среде не создавался.
+
+## [M3 — Classification Engine Completed] — 2026-11-27
+
+### Завершено (`M3` + стабилизация M2)
+- Реализован движок классификации `src/core/classification/` (`classifyRadius`, `buildSubclasses`, `classifyTriple`, `reconstructTriple`, `recoverEuclideanParameters`) и набор тестов `src/tests/core/classificationM3.test.ts` (отчёт: `M3_IMPLEMENTATION_REPORT.md`).
+- Завершена дополнительная проверка полноты и упорядоченности делителей в `src/core/factorization/hyperbolaPairs.ts`.
+
 ## [1.2.0] — 2026-11-24
 
 ### Добавлено (Двухпараметрическая модель $t, \lambda$ и масштабируемый пятый круг)

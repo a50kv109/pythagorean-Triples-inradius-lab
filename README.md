@@ -49,7 +49,16 @@ Given the canonical prime factorization of inradius $r = 2^{e_0} \prod_{i=1}^{s}
 - Canonical prime factorization (`factorizeBigInt`) with wheel trial division, deterministic Pollard-Brent cycle finding, and 3-tier primality certification (`PROVEN_PRIME`, `PROBABLE_PRIME`, `UNFACTORED_COMPOSITE`) anchored on the Sorenson & Webster (2015) 13-base deterministic Miller-Rabin bound ($\approx 3.317 \times 10^{24}$).
 - Complete divisor generation, hyperbola divisor pair builder ($xy = 2r^2$), and arithmetic counters ($\omega^*(r), \tau(r), T(r), N(r)$).
 
-### 3.3 Legacy Geometry Subsystem (`src/math/`, `src/components/`, `src/canonical/`)
+### 3.3 M3 — Classification Engine (`src/core/classification/`)
+- Deterministic reconstruction of canonical Pythagorean triples $a < b < c$ from $(r, x, y)$, recovery of primitive Euclidean parameters $(m, n, u, v)$, scale factor extraction $k = \gcd(a, b, c)$, and exact partitioning into $k$-subclasses $C(r) = \bigsqcup_{k \mid r} C_k(r)$ with canonical IDs (`CL-R{r}-D{2r}`, `PT-R{r}-K{k}-X{x}`, `PT-R{r/k}-K1-X{x/k}`).
+
+### 3.4 M4 — Structural Facets (`src/core/facets/`)
+Constructed directly over M1–M3 outputs without duplicating factorization, divisor generation, or triple classification:
+- **M4-S1 (`spornFacet.ts` — `SpornFacet`):** Scale-invariant Sporn similarity coordinates ($\tilde{x} = x/r$, $\tilde{y} = y/r$), fundamental ray radius $r_0 = r/k$, parity regime (`X0_ODD` / `X0_EVEN`), strict integer 4-zone classifier (`Z0_ROOT`, `Z1_A1`, `Z3_A3`, `Z2_A2`), and exact rational triangle geometry (`tanHalfA`, `tanHalfB`, `sinA`, `cosA`, `tanA`, `formT`, `asymQ`, `normS`, `normP = P/r = 2 * normS`), verified by `SF-INV-01..06`.
+- **M4-S2 (`berggrenFacet.ts` — `BerggrenFacet`):** Ternary Berggren tree operators (`stepA1`, `stepA2`, `stepA3`), unique zone-based parent descent (`stepParent`, `requireBerggrenParent`), bidirectional canonical/raw word addressing (`canonWordToRawWord`, `rawWordToCanonWord`, `applyCanonWord`, `applyRawWord`), primitive-ancestor inheritance for scaled triples (`appliesToPrimitiveAncestor = (k > 1n)`), and invariants `BF-INV-01..06`.
+- **M4-S3 (`classProfileFacet.ts` — `ClassProfileFacet`):** Per-class exact statistical aggregation (`buildClassProfileFacet`, `verifyClassProfileInvariants`) joining M3, S1, and S2 via strict 1-to-1 `tripleId` bijection, separating `allTriples` ($N(r)$) and `primitiveTriples` ($T(r)$), computing balanced pairwise `ExactRational` means, zone histograms, hypotenuse compression ($c_{\min} < 5r$), primitive-only Berggren depths, and invariants `CPF-INV-01..12`.
+
+### 3.5 Legacy Geometry Subsystem (`src/math/`, `src/components/`, `src/canonical/`)
 - The original **Four Circles Laboratory** (exterior squares $Q_a, Q_b, Q_c$, incircle $K_i$, Thales circumcircle $K_o$, incenter partition, and spectral analysis) is preserved intact as a legacy and visual reference subsystem within the repository.
 
 ---
@@ -59,11 +68,11 @@ Given the canonical prime factorization of inradius $r = 2^{e_0} \prod_{i=1}^{s}
 | Milestone | Status | Description |
 | :--- | :--- | :--- |
 | **Phase 1 — Workspace & Shell** | Completed | React UI, navigation, panels, localization. |
-| **M1 — Exact Computation Core** | Completed & Audited | Autonomous BigInt arithmetic and rational numbers. |
+| **M1 — Exact Computation Core** | Completed & Audited | Autonomous `BigInt` arithmetic and `ExactRational` numbers. |
 | **M2 — Number Theory Engine** | Completed & Stabilized | Factorization, primality certification, divisors, hyperbola pairs, and counters. |
-| **M3 — Classification Engine** | Planned | Triangle class $C(r)$ and sub-class $C_k(r)$ builder. |
-| **M4 — Facets & Structural Analysis** | Planned | Sporn coordinates, Berggren trees, multi-attribute matrices. |
-| **M5 — Class Passports & Matrices** | Planned | Class passports and structural catalogs. |
+| **M3 — Classification Engine** | Completed & Verified | Triangle class $C(r)$ and sub-class $C_k(r)$ builder. |
+| **M4 — Structural Facets** | **COMPLETED** | `M4-S1 SpornFacet` (Accepted), `M4-S2 BerggrenFacet` (Accepted), `M4-S3 ClassProfileFacet` (Accepted). |
+| **M5 — Class Passports & Matrices** | Planned | Class passports, multi-attribute matrices, and range catalogs. |
 | **M6 — Independent Verifier** | Planned | Automated verifier checking `CHK-01..12`. |
 | **M7 — Geometric Projection** | Planned | SVG projection and visual adapter. |
 | **M8 — Export & Analytics** | Planned | JSON/CSV export and workspace reporting. |
@@ -79,16 +88,19 @@ npm install
 npm run dev       # Starts Vite dev server at http://localhost:3000
 npm run lint      # Runs TypeScript type-checking (tsc --noEmit)
 npm run build     # Builds production bundle into dist/
-npm test          # Runs automated test suite (geometry, incenter partition, M1 exact core, M2 number theory engine)
+npm test          # Runs all 8 automated suites (Geometry, Incenter Partition, M1, M2, M3, M4-S1, M4-S2, M4-S3)
 ```
 
 ---
 
-## 6. Verification Policy
-- **Exact-First:** All number-theoretic calculations use `BigInt`.
-- **Primality Safety:** Proven primality is never conflated with probable primality.
-- **Incomplete Handling:** Timed-out or incomplete factorizations are reported explicitly as `INCOMPLETE` (`UNFACTORED_COMPOSITE`).
-- **Golden Benchmarks:** Tested against reference catalog totals ($r=1..30$: $T=61, N=174$; $r=1..100$: $T=249, N=855$).
+## 6. Verification Policy & Documentation
+- **Exact-First:** All discrete core routines (`src/core/*`) use pure `BigInt` and `ExactRational`; floating-point math (`Math.*`, `Number()`, `parseFloat`) is forbidden.
+- **Primality & Completeness Safety:** Probable primality is never conflated with proven primality; incomplete classifications (`isComplete === false`) are rejected with explicit error codes across M4.
+- **Golden Benchmarks:** Verified across $r = 1\dots 30$ ($T=61, N=174$), $r = 1\dots 50$ ($110$ unique primitive tree paths), $r = 1\dots 100$ ($T=249, N=855$), and $r = 1\dots 120$ ($120$ classes, $N=1098$, $T=311$).
+- **Technical Reference Docs:**
+  - Architecture & Boundaries: [`docs/architecture/SYSTEM_ARCHITECTURE.md`](docs/architecture/SYSTEM_ARCHITECTURE.md), [`docs/architecture/MODULE_BOUNDARIES.md`](docs/architecture/MODULE_BOUNDARIES.md)
+  - M4 Mathematical Spec & API: [`docs/mathematics/M4_MATHEMATICAL_SPECIFICATION.md`](docs/mathematics/M4_MATHEMATICAL_SPECIFICATION.md), [`docs/architecture/M4_API_REFERENCE.md`](docs/architecture/M4_API_REFERENCE.md)
+  - Verification & Checkpoint: [`docs/development/M4_VERIFICATION_AND_TESTS.md`](docs/development/M4_VERIFICATION_AND_TESTS.md), [`M4_STRUCTURAL_FACETS_FINAL.md`](M4_STRUCTURAL_FACETS_FINAL.md)
 
 ---
 

@@ -1,12 +1,12 @@
 # Verification Policy
 
-**Project:** Pythagoras Circles — Canonical Geometry Research Laboratory  
-**Milestone:** M2 Baseline
+**Project:** Pythagoras Triples Inradius Classification Laboratory  
+**Milestone:** M4 Baseline (M1–M4 Completed)
 
 ## 1. Core Verification Principles
 
-- **Exact Arithmetic:** All mathematical core routines (`src/core/exact/`, `src/core/factorization/`) operate strictly on native `BigInt` and immutable exact rationals (`ExactRational`). Floating-point approximations are forbidden in computational logic.
-- **Separation of Concerns:** Exact number theory and geometric calculations are cleanly separated from visual floating-point screen rendering and charting (`M7`).
-- **Primality Separation:** Probable primality (`PROBABLE_PRIME`) is never conflated with proven primality (`PROVEN_PRIME`). Results involving probable primes are explicitly flagged.
-- **Incomplete Computation Handling:** Incomplete factorizations or timed-out Pollard-Brent runs are reported explicitly as `INCOMPLETE` with diagnostic warnings; they are never masked as successful completions.
-- **Golden Benchmarks & Regression Tests:** The test suite (`npm test`) verifies golden benchmark totals for $r = 1\dots 30$ ($T=61, N=174$) and $r = 1\dots 100$ ($T=249, N=855$), alongside M1 and legacy geometry tests.
+- **Exact Arithmetic:** All discrete core routines (`src/core/exact/`, `src/core/factorization/`, `src/core/classification/`, `src/core/facets/`) operate strictly on native `BigInt` and immutable exact rationals (`ExactRational`). Floating-point approximations (`Math.*`, `Number()`, `parseFloat`, `parseInt`) and `BigInt`-to-`number` conversions are forbidden in computational logic.
+- **Separation of Concerns:** Exact number-theoretic, classification, and facet calculations are cleanly separated from legacy continuous geometry models (`src/math/`) and visual screen rendering (`M7`).
+- **Primality & Completeness Safety:** Probable primality (`PROBABLE_PRIME`) is never conflated with proven primality (`PROVEN_PRIME`). Incomplete factorizations or classifications (`isComplete === false`) are reported explicitly and rejected across M4 (`INCOMPLETE_CLASSIFICATION_RESULT`) rather than masked as complete profiles.
+- **Population Isolation (M4-S3):** Class aggregates strictly separate all triples ($N(r)$) from primitive triples ($T(r)$); Berggren depth bounds are computed strictly on primitive triples ($k = 1$).
+- **Golden Benchmarks & Regression Tests:** The automated suite (`npm test`, 8 test scripts) verifies golden totals for $r = 1\dots 30$ ($T=61, N=174$), $r = 1\dots 50$ ($110$ unique Berggren primitive paths), $r = 1\dots 100$ ($T=249, N=855$), and $r = 1\dots 120$ ($120$ classes, $N=1098, T=311$), alongside M1, M2, M3, and legacy geometry suites. See [`M4_VERIFICATION_AND_TESTS.md`](M4_VERIFICATION_AND_TESTS.md).
