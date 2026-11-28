@@ -1,7 +1,7 @@
 # Development Roadmap
 
 **Project:** Pythagoras Triples Inradius Classification Laboratory  
-**Milestone:** M4 Frozen Baseline + M5-S1 (`IMPLEMENTED — PENDING INDEPENDENT AUDIT`)
+**Milestone:** M4 Frozen Baseline + `M5-S1` & `M5-S2` (`IMPLEMENTED — PENDING INDEPENDENT AUDIT`)
 
 ## Milestone Plan
 
@@ -10,12 +10,12 @@
 - **M2 (Number Theory Engine):** Completed & Stabilized (Frozen) — Prime factorization, primality certification, divisor generation, hyperbola pairs, arithmetic counters.
 - **M3 (Classification Engine):** Completed & Verified (Frozen) — Triangle class $C(r)$ and sub-class $C_k(r)$ builder, Euclidean parameter recovery.
 - **M4 (Structural Facets):** Completed & Accepted (Frozen) —
-  - `M4-S1 SpornFacet` (Accepted): Sporn coordinates, 4-zone integer classifier, exact rational geometry (`normP = 2 * normS`).
+  - `M4-S1 SpornFacet` (Accepted): Sporn coordinates, 4-zone integer classifier, exact rational geometry (`normP = 2 * normS`, `asymQ = (b - a)/(a + b)`).
   - `M4-S2 BerggrenFacet` (Accepted): Ternary tree transitions, `stepParent`, bidirectional `canonWord`/`rawWord` addressing, primitive-ancestor inheritance.
   - `M4-S3 ClassProfileFacet` (Accepted): Separated `allTriples`/`primitiveTriples` aggregates, zone histograms, pairwise `ExactRational` means, `CPF-INV-01..12`.
-- **M5 (Passports & Matrices):** In Progress (Architecture in `M5_IMPLEMENTATION_BLUEPRINT.md`) —
-  - `M5-S1 ClassPassport + EuclidAdapter`: **`IMPLEMENTED — PENDING INDEPENDENT AUDIT`** (`src/core/passports/types.ts`, `errors.ts`, `euclidAdapter.ts`, `classPassport.ts`, `src/tests/core/classPassportM5S1.test.ts`). Consumes ready M2, M3, and M4-S3 outputs without recomputing classification or profile; implements `CP-INV-01..08`, `{x0, y0} = {v², 2u²}` verification, strict ascending `x` ordering check, partial M2 preservation on `INCOMPLETE`, and separation of `status`/`isComplete` vs. `certificationStatus`.
-  - `M5-S2 ClassMatrix` (`Full` & `Lazy`): **Next Step (Not Started)** — Multi-attribute matrix builder (`ARITH`, `EUCLID`, `GEOM`, `SPORN`, `BERGGREN`).
+- **M5 (Passports & Matrices):** In Progress (Architecture in `M5_IMPLEMENTATION_BLUEPRINT.md`; `Q1 = CLOSED` — inherits `asymQ` from `M4-S1`) —
+  - `M5-S1 ClassPassport + EuclidAdapter`: **`IMPLEMENTED — PENDING INDEPENDENT AUDIT`** (`src/core/passports/types.ts`, `errors.ts`, `euclidAdapter.ts`, `classPassport.ts`, `src/tests/core/classPassportM5S1.test.ts`). Consumes ready M2, M3, and M4-S3 outputs without recomputing classification or profile; implements `CP-INV-01..08` (including `CP-INV-07` hardening on `isSortedByX`), `{x0, y0} = {v², 2u²}` verification, strict ascending `x` ordering check, partial M2 preservation on `INCOMPLETE`, and separation of `status`/`isComplete` vs. `certificationStatus`.
+  - `M5-S2 ClassMatrix` (`Full` & `Lazy`): **`IMPLEMENTED — PENDING INDEPENDENT AUDIT`** (`src/core/passports/classMatrix.ts`, `src/tests/core/classMatrixM5S2.test.ts`). Eager `CORE`/`INDEX` backbone (deterministic shallow-copy `x` sort without mutating input, `rowIdx = 0n..N-1n`) + 5 lazy cached groups (`ARITH`, `EUCLID`, `GEOM`, `SPORN`, `BERGGREN`), `CM-INV-01..08`, `Full === Lazy` parity, `verifyPassportMatrixAlignment`, Golden $r = 1..420$, and $r = 1..50$ sweep.
   - `M5-S3 RangeCatalog`: **Deferred** — Range-level passport aggregation across $[r_{\min}, r_{\max}]$ and barrel export.
   - `TransversalFacet`: **Deferred** — Optional post-Q4 extension (`commonLegPrimA`, `commonHypPrimC`).
   - *Note:* `Price tree` is not part of the project architecture.

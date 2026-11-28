@@ -44,11 +44,12 @@ console.log('Running M5-S1 ClassPassport & euclidAdapter Test Suite...\n');
 const passportsDir = path.resolve(process.cwd(), 'src/core/passports');
 const passportFiles = fs.readdirSync(passportsDir).filter((f) => f.endsWith('.ts'));
 
-assert.deepEqual(
-  [...passportFiles].sort(),
-  ['classPassport.ts', 'errors.ts', 'euclidAdapter.ts', 'types.ts'],
-  'Expected strictly the 4 M5-S1 files in src/core/passports'
-);
+for (const requiredFile of ['classPassport.ts', 'errors.ts', 'euclidAdapter.ts', 'types.ts']) {
+  assert.ok(
+    passportFiles.includes(requiredFile),
+    `Expected M5-S1 file ${requiredFile} in src/core/passports`
+  );
+}
 
 for (const file of passportFiles) {
   const raw = fs.readFileSync(path.join(passportsDir, file), 'utf8');
@@ -58,7 +59,10 @@ for (const file of passportFiles) {
   assert.ok(!/\bparseFloat\s*\(|\bparseInt\s*\(/.test(codeOnly), `Forbidden parseFloat/parseInt found in ${file}`);
   assert.ok(!/\bFloat64/.test(codeOnly), `Forbidden Float64 usage found in ${file}`);
   assert.ok(!/from\s+['"]react['"]/.test(codeOnly), `Forbidden React dependency found in ${file}`);
-  assert.ok(!/classMatrix|rangeCatalog/i.test(codeOnly), `Unexpected M5-S2/S3 reference in ${file}`);
+  assert.ok(!/rangeCatalog/i.test(codeOnly), `Unexpected M5-S3 rangeCatalog reference in ${file}`);
+  if (file === 'classPassport.ts' || file === 'euclidAdapter.ts') {
+    assert.ok(!/classMatrix/i.test(codeOnly), `M5-S1 module ${file} must not depend on M5-S2 classMatrix`);
+  }
 }
 console.log('✓ Section 0: Pure BigInt isolation & M5-S1 file boundary verified.');
 
@@ -560,6 +564,20 @@ assert.throws(
       expectedMatrixSummary: { ...incompleteDivPassport.expectedMatrixSummary, rowCount: 0n },
     }),
   (err: unknown) => err instanceof PassportInvariantError && err.message.includes('CP-INV-07')
+);
+assert.throws(
+  () =>
+    verifyClassPassportInvariants({
+      ...incompleteDivPassport,
+      expectedMatrixSummary: {
+        ...incompleteDivPassport.expectedMatrixSummary,
+        isSortedByX: undefined as unknown as boolean,
+      },
+    }),
+  (err: unknown) =>
+    err instanceof PassportInvariantError &&
+    err.code === 'INVARIANT_VIOLATION' &&
+    err.message.includes('CP-INV-07')
 );
 assert.throws(
   () =>

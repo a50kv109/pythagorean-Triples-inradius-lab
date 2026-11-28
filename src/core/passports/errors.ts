@@ -57,3 +57,41 @@ export class EuclidAdapterError extends ClassPassportError {
     this.name = 'EuclidAdapterError';
   }
 }
+
+export type ClassMatrixErrorCode =
+  | 'INCOMPLETE_CLASSIFICATION_RESULT'
+  | 'INVALID_RADIUS'
+  | 'DUPLICATE_TRIPLE_ID'
+  | 'DUPLICATE_X'
+  | 'TRIPLE_MISMATCH'
+  | 'FACET_CACHE_MISMATCH'
+  | 'INVALID_COLUMN_GROUP'
+  | 'INVALID_ROW_INDEX'
+  | 'INVARIANT_VIOLATION';
+
+export class ClassMatrixError extends Error {
+  readonly code: ClassMatrixErrorCode;
+
+  constructor(code: ClassMatrixErrorCode, message: string) {
+    super(message);
+    this.name = 'ClassMatrixError';
+    this.code = code;
+  }
+}
+
+export class IncompleteClassificationError extends ClassMatrixError {
+  constructor(r: unknown, reason = 'classification is incomplete or missing triples') {
+    super(
+      'INCOMPLETE_CLASSIFICATION_RESULT',
+      `Cannot build ClassMatrix for r=${String(r)}: ${reason}`
+    );
+    this.name = 'IncompleteClassificationError';
+  }
+}
+
+export class MatrixInvariantError extends ClassMatrixError {
+  constructor(invariantId: string, message: string) {
+    super('INVARIANT_VIOLATION', `${invariantId} violated: ${message}`);
+    this.name = 'MatrixInvariantError';
+  }
+}

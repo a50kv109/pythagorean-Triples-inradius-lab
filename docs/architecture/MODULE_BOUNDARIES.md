@@ -1,14 +1,14 @@
 # Module Boundaries & Isolation Rules
 
 **Project:** Pythagoras Triples Inradius Classification Laboratory  
-**Milestone:** M4 Frozen Baseline + M5-S1 (`IMPLEMENTED — PENDING INDEPENDENT AUDIT`)
+**Milestone:** M4 Frozen Baseline + `M5-S1` & `M5-S2` (`IMPLEMENTED — PENDING INDEPENDENT AUDIT`)
 
 ## 1. Strict Boundary Rules
 
 To maintain absolute mathematical integrity and testability, the codebase enforces strict acyclic hierarchical module boundaries:
 
 ```text
-src/core/exact/ (M1) ◄── src/core/factorization/ (M2) ◄── src/core/classification/ (M3) ◄── src/core/facets/ (M4) ◄── src/core/passports/ (M5-S1)
+src/core/exact/ (M1) ◄── src/core/factorization/ (M2) ◄── src/core/classification/ (M3) ◄── src/core/facets/ (M4) ◄── src/core/passports/ (M5-S1, M5-S2)
 ```
 
 ### 1.1 M1 — Exact Computation Core (`src/core/exact/`)
@@ -37,8 +37,14 @@ src/core/exact/ (M1) ◄── src/core/factorization/ (M2) ◄── src/core/c
 ### 1.5 M5-S1 — `ClassPassport` & `EuclidAdapter` (`src/core/passports/`)
 - **Status:** `IMPLEMENTED — PENDING INDEPENDENT AUDIT` (`types.ts`, `errors.ts`, `euclidAdapter.ts`, `classPassport.ts`).
 - **Allowed Dependencies:** M1 (`../exact/index.ts`), M2 (`../factorization/index.ts` types), M3 (`../classification/index.ts`), M4-S3 (`../facets/index.ts` types), and internal `M5-S1` modules (`./types.ts`, `./errors.ts`).
-- **Forbidden Dependencies:** React, DOM, SVG, `Math.*`, `Number()`, `parseInt`/`parseFloat`, `Float64`, duplicating M2 factorization, recomputing M3 classification or `recoverEuclideanParameters` when `triple.euclideanParams` is already present, recomputing M4-S3 `ClassProfileFacet`, unstarted `M5-S2` (`ClassMatrix`), deferred `M5-S3` (`RangeCatalog`) / `TransversalFacet`, `M6–M8`, or `Price tree` (not part of the architecture).
+- **Forbidden Dependencies:** React, DOM, SVG, `Math.*`, `Number()`, `parseInt`/`parseFloat`, `Float64`, duplicating M2 factorization, recomputing M3 classification or `recoverEuclideanParameters` when `triple.euclideanParams` is already present, recomputing M4-S3 `ClassProfileFacet`, `M5-S2` (`classMatrix.ts`), deferred `M5-S3` (`RangeCatalog`) / `TransversalFacet`, `M6–M8`, or `Price tree`.
 - **Rule:** `ClassPassport` acts strictly as a zero-duplication assembler and consistency checker over ready M2, M3, and M4-S3 outputs; `EuclidAdapter` verifies `{x0, y0} = {v², 2u²}` against M3 parameters.
 
-### 1.6 Remaining Future Modules (`M5-S2`, Deferred Extensions, `M6–M8`)
-- **Rule:** Next step `M5-S2` (`ClassMatrix`, not started), deferred `M5-S3` (`RangeCatalog`) and `TransversalFacet`, independent verifier (`M6`), visual projection (`M7`), and export (`M8`) must respect strict dependency directions. Specifically, `M6` must remain independent from generation logic to prevent common-mode verification errors.
+### 1.6 M5-S2 — `ClassMatrix` (`src/core/passports/classMatrix.ts`)
+- **Status:** `IMPLEMENTED — PENDING INDEPENDENT AUDIT` (`classMatrix.ts` + M5-S2 types/errors).
+- **Allowed Dependencies:** M1 (`../exact/index.ts`), M3 (`../classification/index.ts` types), M4-S1/M4-S2 (`../facets/index.ts`), and `M5-S1` (`./euclidAdapter.ts`, `./types.ts`, `./errors.ts`).
+- **Forbidden Dependencies:** React, DOM, SVG, `Math.*`, `Number()`, `parseInt`/`parseFloat`, `Float64`, mutating source `classification.allTriples`, `TRANSVERSAL` (`commonLegPrimA`, `commonHypPrimC`), deferred `M5-S3` (`RangeCatalog`), `M6–M8`, or `Price tree`.
+- **Rule:** `ClassMatrix` shares pure group evaluators between `Full` and `Lazy` modes, enforces `CM-INV-01..08`, inherits `asymQ` from `M4-S1` (`Q1 = CLOSED`), and preserves `M5-S1` independence.
+
+### 1.7 Remaining Future Modules (Deferred M5 Extensions & `M6–M8`)
+- **Rule:** Deferred `M5-S3` (`RangeCatalog`) and `TransversalFacet`, independent verifier (`M6`), visual projection (`M7`), and export (`M8`) must respect strict dependency directions. Specifically, `M6` must remain independent from generation logic to prevent common-mode verification errors.

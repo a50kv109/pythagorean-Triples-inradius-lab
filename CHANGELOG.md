@@ -2,30 +2,43 @@
 
 Все заметные изменения в проекте документируются в этом файле.
 
+## [M5-S2 — ClassMatrix (`IMPLEMENTED — PENDING INDEPENDENT AUDIT`) + M5-S1 CP-INV-07 Hardening] — 2026-11-28
+
+### Реализовано и доработано (`M5-S1` hardening + `M5-S2`)
+- **Статус подфаз:** `M5-S1` и `M5-S2` имеют статус **`IMPLEMENTED — PENDING INDEPENDENT AUDIT`** (`M1–M4` заморожены; `Q1 = CLOSED` — `M5` наследует `asymQ = (b-a)/(a+b)` из `M4-S1` без переопределения; `M5-S3 RangeCatalog` и `TRANSVERSAL` отложены; `Price tree` не входит в архитектуру проекта).
+- **Доработка `M5-S1` (`CP-INV-07`):**
+  - Подтверждена буквальная проверка `expectedMatrixSummary.isSortedByX !== false` в `verifyClassPassportInvariants` (`src/core/passports/classPassport.ts` не изменялся).
+  - В `src/tests/core/classPassportM5S1.test.ts` (секция 5) добавлен негативный тест клонирования валидного `INCOMPLETE`-паспорта с `isSortedByX = undefined`, подтверждающий выброс `PassportInvariantError` (`CP-INV-07`), при сохранении положительной проверки `isSortedByX === false`.
+- **Реализация `M5-S2` (`src/core/passports/classMatrix.ts`, `types.ts`, `errors.ts`):**
+  - Реализованы `createLazyClassMatrix`, `buildFullClassMatrix`, `verifyClassMatrixInvariants`, `verifyFullLazyMatrixParity`, `verifyPassportMatrixAlignment`, `findFullMatrixRowByX`, `getFullMatrixRowByIndex` и `ALL_MATRIX_COLUMN_GROUPS`.
+  - **Каркас `CORE`/`INDEX` и политика B5:** проверка уникальности `tripleId` (`DUPLICATE_TRIPLE_ID`) и `x` (`DUPLICATE_X`), детерминированная сортировка **поверхностной копии** по возрастанию `x` без мутации входного `classification.allTriples`, присвоение непрерывных индексов `rowIdx = 0n..N-1n`.
+  - **Пять ленивых кэшируемых групп:** `ARITH`, `EUCLID` (через `resolveEuclideanParameters`), `GEOM` ($p = 3r+x+y = c+r$, $P = 2p$, $S = ab/2 = rp$; переиспользование кэшированных `sinA`/`cosA` при материализации после `SPORN` без повторного расчёта `SpornFacet`), `SPORN` (`M4-S1`) и `BERGGREN` (`M4-S2`, `treeLegSwapped = (A2|A3)`).
+  - **Политика неполноты (B10) и инварианты `CM-INV-01..08`:** отказ на `isComplete === false` и `totalTriplesCount !== expectedTotalCount` через `IncompleteClassificationError`; независимая верификация `CM-INV-01..08` и совместная проверка `verifyPassportMatrixAlignment`.
+- **Тесты и конфигурация:**
+  - Создан тест `src/tests/core/classMatrixM5S2.test.ts` (Golden $r = 1, 2, 3, 6, 15, 30, 35, 105, 420$, паритет `Full === Lazy` во всех порядках, `GEOM` после `SPORN` без пересчёта, нормализация несортированного `allTriples` на копии, мутации `CM-INV-01..08`, негативные guards, `verifyPassportMatrixAlignment`, диапазон $r = 1\dots 50$).
+  - Обновлён `package.json` (`scripts.test` теперь последовательно запускает 10 наборов тестов).
+- **Проверки среды реализации (Gemini; ожидают независимого аудита):**
+  - `npx tsx src/tests/core/classPassportM5S1.test.ts`, `npx tsx src/tests/core/classMatrixM5S2.test.ts`, все 10 наборов `npm test`, `npx tsc --noEmit`, `npm run build` — **PASS**; статический скан `src/core/passports/` — **`SCAN_CLEAN`**.
+
 ## [M5-S1 — ClassPassport + EuclidAdapter (`IMPLEMENTED — PENDING INDEPENDENT AUDIT`)] — 2026-11-28
 
 ### Реализовано и доработано (`M5-S1`)
-- **Статус этапа:** `IMPLEMENTED — PENDING INDEPENDENT AUDIT` (базовая линия `M1–M4` заморожена и не изменялась; `M5-S2 ClassMatrix` не начат; `M5-S3 RangeCatalog` и `TransversalFacet` отложены; `Price tree` не входит в архитектуру проекта).
+- **Статус этапа:** `IMPLEMENTED — PENDING INDEPENDENT AUDIT` (базовая линия `M1–M4` заморожена и не изменялась; `M5-S2 ClassMatrix` не начат на момент этого шага; `M5-S3 RangeCatalog` и `TransversalFacet` отложены; `Price tree` не входит в архитектуру проекта).
 - **Созданные модули (`src/core/passports/`):**
   - `types.ts` — контракты `ClassPassportResult` (`specVersion: '0.1'`), `PassportStatus`, `PassportNumberTheorySummary`, `SubclassSpectrumEntry`, `ExpectedMatrixSummary`, `BuildClassPassportInput`, `ClassifiedTripleInput`, `ResolvedEuclideanParameters`.
   - `errors.ts` — типизированные ошибки `ClassPassportError`, `InvalidRadiusError`, `PassportMismatchError`, `MissingProfileError`, `PassportInvariantError`, `EuclidAdapterError`.
   - `euclidAdapter.ts` — `resolveEuclideanParameters(triple)` для бездубликатного чтения `triple.euclideanParams` (с fallback на `recoverEuclideanParameters` из M3 при их отсутствии) и строгой проверки соответствия параметров Евклида исходным примитивным сдвигам `{x0, y0} = {v², 2u²}`.
   - `classPassport.ts` — `buildClassPassport` и `verifyClassPassportInvariants` поверх готовых выходов M2 (`RadiusNumberTheoryResult`), M3 (`RadiusClassificationResult`) и M4-S3 (`ClassProfileFacetResult`) без пересчёта классификации или профиля.
 - **Тесты и конфигурация:**
-  - Создан тест `src/tests/core/classPassportM5S1.test.ts` (секции 0–5: изоляция `BigInt`, golden-векторы $r = 1, 2, 3, 6, 35, 105$, проверки `EuclidAdapter` включая контрпример `{x0, y0} ≠ {v², 2u²}`, инварианты `CP-INV-01..08`, негативные тесты включая `INCOMPLETE` и несортированные `allTriples`, диапазон $r = 1\dots 30$).
-  - Обновлён `package.json` (`scripts.test` теперь последовательно запускает 9 наборов тестов).
+  - Создан тест `src/tests/core/classPassportM5S1.test.ts` (секции 0–6: изоляция `BigInt`, golden-векторы $r = 1, 2, 3, 6, 35, 105$, проверки `EuclidAdapter` включая контрпример `{x0, y0} ≠ {v², 2u²}`, инварианты `CP-INV-01..08`, негативные тесты включая `INCOMPLETE` и несортированные `allTriples`, диапазон $r = 1\dots 30$).
+  - Обновлён `package.json` (`scripts.test` последовательно запускал 9 наборов тестов).
 - **Ключевые инварианты и поведение M5-S1:**
   - Реализована полная проверка **`CP-INV-01..08`**.
   - Для `COMPLETE`-паспорта строго проверяется возрастающая сортировка `classification.allTriples` по `x` (`expectedMatrixSummary.isSortedByX === true`).
   - При `INCOMPLETE` сохраняются частичные данные M2 (например, доступная `rFactorization` и счётчики/делители до остановки), при этом `profile = null`, `subclassSpectrum = []`, `expectedMatrixSummary = { rowCount: null, isSortedByX: false, firstTripleId: null, lastTripleId: null }`.
   - Разделены вычислительная полнота паспорта (`status: 'COMPLETE' | 'INCOMPLETE'`, `isComplete`) и математическая сертификация M2 (`certificationStatus: 'PROVEN_COMPLETE' | 'PROBABLE_COMPLETE' | 'INCOMPLETE'`).
 - **Проверки среды реализации (Gemini; ожидают независимого аудита):**
-  - Тест `M5-S1` (`npx tsx src/tests/core/classPassportM5S1.test.ts`) — **PASS**.
-  - Все 9 наборов `npm test` — **PASS**.
-  - Проверка типов TypeScript (`npx tsc --noEmit`) — **PASS** (0 ошибок).
-  - Production-сборка (`npm run build`) — **PASS**.
-  - Статический скан `src/core/passports/` на `float64`/`Number()`/`Math.*`/`React` — **`SCAN_CLEAN`**.
-  - *Примечание:* указанные результаты получены в среде реализации Gemini и **не заменяют** независимый аудит.
+  - Тест `M5-S1`, все 9 наборов `npm test`, `npx tsc --noEmit`, `npm run build`, и статический скан `src/core/passports/` (`SCAN_CLEAN`) — **PASS** (*не заменяют независимый аудит*).
 
 ## [M4 — Structural Facets Completed] — 2026-11-28
 

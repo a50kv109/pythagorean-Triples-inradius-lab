@@ -30,7 +30,7 @@
 | **M1 Exact Core** (`src/core/exact/`) | `BigInt`-математика (`isqrtBigInt`, `exactSqrtBigInt`, `gcdBigInt`, `lcmBigInt`, `powBigInt`, `exactDivBigInt`), `ExactRational` (`createRational`, `add/sub/mul/divRational`, `cmp/eq/lt/lte/gt/gteRational`, `formatRational`), `radiusPrimitives` (`computeDiameter`, `computeTwoRSquared`, `verifyHyperbolaIdentity`, `verifyPythagoreanIdentity`). | Вся точная `BigInt` и `ExactRational` арифметика, сравнения, форматирование и базовые проверки тождеств. | Строго запрещены `Number()`, `Math.*`, `parseFloat`, `parseInt`, `float64`. |
 | **M2 Number Theory Engine** (`src/core/factorization/`) | `analyzeRadiusNumberTheory(r, options): RadiusNumberTheoryResult` возвращает `radius`, `diameter`, `twoRSquared`, `rFactorization` (`twoExponent`, `oddPrimeFactors`, `certificationStatus`), `twoRSquaredFactorization`, `certificationStatus` (`'PROVEN_COMPLETE' \| 'PROBABLE_COMPLETE' \| 'INCOMPLETE'`), `isFactorizationComplete`, `isDivisorEnumerationComplete`, `divisorsOfR`, `counters: { omegaStar, tauR, tauTwoRSquared, T, N }`, `hyperbolaPairs`, `warnings`. | Прямой источник `rFactorization`, `certificationStatus`, счётчиков $\omega^*(r), \tau(r), \tau(2r^2), T(r), N(r)$ и `divisorsOfR`. | При `INCOMPLETE` или превышении `maxDivisorEnumerationCount` (`500_000n`) `counters` или `hyperbolaPairs` могут быть `null`. M5 не должен перефакторизовывать $r$. |
 | **M3 Classification Engine** (`src/core/classification/`) | `classifyRadius(r): RadiusClassificationResult` возвращает `{ r, totalTriplesCount, expectedTotalCount, isComplete, subclasses: SubclassGroup[], allTriples: PythagoreanTriple[], warnings }`. Каждый `PythagoreanTriple` содержит `{ r, D, x, y, a, b, c, k, isPrimitive, primitiveRadius, primitiveAncestor, classId, tripleId, primId, euclideanParams?: { m, n, u, v } }`. Также экспортируется `recoverEuclideanParameters(x0, y0)`. | Каркас строк матрицы, канонические ID (`CL-R{r}-D{2r}`, `PT-R{r}-K{k}-X{x}`, `PT-R{r/k}-K1-X{x/k}`), разбиение на подклассы $C_k(r)$, `euclideanParams` (`n = u`, `m = u + v`). | Интерфейс `RadiusClassificationResult` **не** содержит поля `status` и **не** пробрасывает `rFactorization`, `certificationStatus`, `omegaStar`, `tauR`, `tauTwoRSquared` из M2. Поле `euclideanParams` в типе опционально (`?`), хотя `classifyTriple` всегда его заполняет. |
-| **M4-S1 `SpornFacet`** (`src/core/facets/spornFacet.ts`) | `computeSpornFacetForTriple`, `computeSpornFacetsForClass` → `SpornFacetResult`: `{ tripleId, classId, primId, r, k, isPrimitive, x, y, spornX, spornY, spornZone, rayBaseR0, parityCase, tanHalfA, tanHalfB, sinA, cosA, tanA, formT, asymQ, normS, normP }`. Инварианты `SF-INV-01..06`. | `spornX`, `spornY`, `spornZone`, `rayBaseR0`, `parityCase`, `sinA (= a/c)`, `cosA (= b/c)`, `tanA (= a/b)`, `tanHalfA/B`, `formT`, `normS`, `normP = 2 * normS`, кандидат `asymQ`. | При `!classification.isComplete` выбрасывает `IncompleteClassificationError`. `asymQ` зашит как `(b-a)/(a+b)`, но в M5 имеет статус `OPEN / PENDING_AGREEMENT`. |
+| **M4-S1 `SpornFacet`** (`src/core/facets/spornFacet.ts`) | `computeSpornFacetForTriple`, `computeSpornFacetsForClass` → `SpornFacetResult`: `{ tripleId, classId, primId, r, k, isPrimitive, x, y, spornX, spornY, spornZone, rayBaseR0, parityCase, tanHalfA, tanHalfB, sinA, cosA, tanA, formT, asymQ, normS, normP }`. Инварианты `SF-INV-01..06`. | `spornX`, `spornY`, `spornZone`, `rayBaseR0`, `parityCase`, `sinA (= a/c)`, `cosA (= b/c)`, `tanA (= a/b)`, `tanHalfA/B`, `formT`, `normS`, `normP = 2 * normS`, `asymQ`. | При `!classification.isComplete` выбрасывает `IncompleteClassificationError`. `Q1 = CLOSED` — M5 наследует `asymQ = (b-a)/(a+b)` из замороженного `M4-S1` без переопределения. |
 | **M4-S2 `BerggrenFacet`** (`src/core/facets/berggrenFacet.ts`) | `computeBerggrenFacetForTriple`, `computeBerggrenFacetsForClass` → `BerggrenFacetResult`: `{ tripleId, classId, primId, r, k, isPrimitive, appliesToPrimitiveAncestor, primitiveAncestor, isRoot, canonWord, rawWord, treeDepth, parentOperator, parentId, children }`. Инварианты `BF-INV-01..06`. | `canonWord`, `rawWord`, `treeDepth`, `parentOperator`, `parentId`, `appliesToPrimitiveAncestor`, `children`. | В `BerggrenFacetResult` флаг `legSwapped` присутствует в `children.{A1,A2,A3}`, но отсутствует на верхнем уровне текущей тройки (восстанавливается как `parentOperator === 'A2' \|\| parentOperator === 'A3'`). Сложность — $O(d)$ на тройку ($d \le r_0 - 1$). |
 | **M4-S3 `ClassProfileFacet`** (`src/core/facets/classProfileFacet.ts`) | `buildClassProfileFacet(classification, spornFacets, berggrenFacets)` → `ClassProfileFacetResult`: `{ classId, r, cMin, cMax, cMinRatio, hasSub5rCompression, spornXMin, spornXMax, allTriples: ClassPopulationMetrics, primitiveTriples: PrimitivePopulationMetrics }`. Инварианты `CPF-INV-01..12`. | Готовые агрегаты класса, экстремумы гипотенузы и $\tilde{x}$, сжатие `< 5r`, гистограммы зон, точные средние `meanSpornX`, `meanADivC`, глубины Берггрена строго по ППТ. | M5 не должен пересчитывать эти метрики. Принимает только полные классы с 1-to-1 биекцией `tripleId`. |
 
@@ -189,7 +189,7 @@ M1 (exact) ◄── M2 (factorization) ◄── M3 (classification) ◄── 
 | `tanHalfB` | M4-S1 | $\tan(B/2) = \frac{r}{r + x} = \frac{1}{\tilde{x} + 1}$ | безразм. ($L^0$) | `ExactRational` | В группе `SPORN` | `lazy (SPORN)` | `r`, `x` |
 | `tanA` | M4-S1 | $\tan A = \frac{a}{b}$ | безразм. ($L^0$) | `ExactRational` | В группе `SPORN` | `lazy (SPORN)` | `a`, `b` |
 | `formT` | M4-S1 | $t = \frac{b}{a} > 1$ | безразм. ($L^0$) | `ExactRational` | В группе `SPORN` | `lazy (SPORN)` | `a`, `b` |
-| `asymQ` | M4-S1 | Кандидат: $q = \frac{b - a}{a + b} = \frac{t - 1}{t + 1}$ *(статус `OPEN`)* | безразм. ($L^0$) | `ExactRational` | В группе `SPORN` | `lazy (SPORN)` | `a`, `b` (**Q1**) |
+| `asymQ` | M4-S1 | $q = \frac{b - a}{a + b} = \frac{t - 1}{t + 1}$ *(наследуется из M4-S1; `Q1 = CLOSED`)* | безразм. ($L^0$) | `ExactRational` | В группе `SPORN` | `lazy (SPORN)` | `a`, `b` (**Q1 = CLOSED**) |
 | `normS` | M4-S1 | $\frac{S}{r^2} = 3 + \tilde{x} + \tilde{y}$ | безразм. ($L^0$) | `ExactRational` | В группе `SPORN` | `lazy (SPORN)` | `spornX`, `spornY` |
 | `normP` | M4-S1 | $\frac{P}{r} = 6 + 2\tilde{x} + 2\tilde{y} = 2 \cdot \text{normS}$ | безразм. ($L^0$) | `ExactRational` | В группе `SPORN` | `lazy (SPORN)` | `normS` |
 
@@ -210,11 +210,8 @@ M1 (exact) ◄── M2 (factorization) ◄── M3 (classification) ◄── 
 
 ## 7. Four Open Design Questions (Phase 2)
 
-### Q1. `asymQ` (`OPEN / PENDING_AGREEMENT`)
-Текущее определение в `M4-S1`: $q = \frac{b - a}{a + b} = \frac{t - 1}{t + 1} \in \mathbb{Q} \cap (0, 1)$, где $t = b/a > 1$.
-- **Вариант A (сохранить формулу `M4-S1`):** `asymQ` берётся напрямую из `SpornFacetResult.asymQ`. Плюсы: полная согласованность с `M4-S1` и стендом `square-to-Rhombus-Geometry-lab`, точная рациональность, монотонность по $t$, обратимость $t = (1+q)/(1-q)$. Минус: ограничивает выбор альтернативной меры под тем же именем.
-- **Вариант B (пересмотр формулы в M5):** так как `M4-S1` заморожен, изменение формулы потребует либо введения нового поля в M5 (например, `asymIndex`) рядом с `asymQ`, чтобы не создавать противоречия с `SpornFacetResult.asymQ`, либо сохранения поля со статусом `OPEN` до согласования.
-- **Решение на этапе blueprint:** определение **не замораживается**; до явного согласования пользователем `asymQ` помечается `OPEN / PENDING_AGREEMENT` (с `M4-S1` как базовым кандидатом).
+### Q1. `asymQ` (`CLOSED — INHERITED FROM M4-S1`)
+**Статус:** `Q1 = CLOSED` — M5 наследует $q = \frac{b - a}{a + b} = \frac{t - 1}{t + 1} \in \mathbb{Q} \cap (0, 1)$ напрямую из замороженного `M4-S1` (`SpornFacetResult.asymQ`) без переопределения. Плюсы: полная согласованность с `M4-S1` и стендом `square-to-Rhombus-Geometry-lab`, точная рациональность в `ExactRational`, строгая монотонность по $t = b/a$, обратимость $t = (1+q)/(1-q)$ и единое значение во всех строках `ClassMatrix` (`CM-INV-06`).
 
 ### Q2. Углы и `float64`
 - **Целевая архитектура:** точное ядро M5 (`src/core/passports/`) оперирует **только** в `BigInt` и `ExactRational` и содержит полную точную тригонометрию (`sinA = a/c`, `cosA = b/c`, `tanA = a/b`, `tanHalfA = r/(r+y)`, `tanHalfB = r/(r+x)`).
@@ -258,7 +255,7 @@ export interface ClassMatrixRowCore {
 ```
 
 ### 8.2 Режимы работы, кэширование и политика неполноты
-1. **Сортировка по `x`:** строки строго упорядочены по $x_0 < x_1 < \dots < x_{N-1}$. При построении проверяется монотонность входного `allTriples` (при нарушении — детерминированная сортировка `x` $\uparrow$ или ошибка дубликата `x`), а `rowIdx` присваивается последовательно `0n .. N-1n`.
+1. **Сортировка по `x` (Политика B5):** строки матрицы строго упорядочены по $x_0 < x_1 < \dots < x_{N-1}$. При построении проверяется уникальность `tripleId` (`DUPLICATE_TRIPLE_ID`) и `x` (`DUPLICATE_X`), валидируются все тройки, затем детерминированно сортируется **поверхностная копия** (`shallow copy`) массива по возрастанию `x` без мутации входного `classification.allTriples`, и лишь после этого присваиваются непрерывные индексы `rowIdx = 0n .. N-1n`. (Отметим: `M5-S1` `buildClassPassport` по-прежнему требует предсортированный `classification.allTriples` при `COMPLETE`.)
 2. **Стабильность ID:** `tripleId`, `classId`, `primId` копируются напрямую из M3 и неизменны в любых режимах.
 3. **Два режима материализации с едиными формулами:**
    - **Full Matrix (`buildFullClassMatrix`):** материализует все утверждённые группы (`ARITH`, `EUCLID`, `GEOM`, `SPORN`, `BERGGREN`) в замороженный объект.
@@ -269,7 +266,13 @@ export interface ClassMatrixRowCore {
    - Повторный запрос уже материализованной группы возвращает замороженную ссылку из кэша за $O(1)$.
 5. **Политика при `isComplete === false`:**
    - **Запрет выдачи неполной матрицы за полную:** `buildFullClassMatrix` и `createLazyClassMatrix` строго отклоняют `classification.isComplete === false` или `totalTriplesCount !== expectedTotalCount` выбрасыванием `IncompleteClassificationError`.
-   - `buildClassPassport` при `isComplete === false` в мягком/каталожном режиме может вернуть паспорт только с явным `status: 'INCOMPLETE'`, `isComplete: false`, `profile: null`, `matrixSummary.rowCount = 0n` (либо выбросить ошибку в строгом режиме).
+   - **Фактический контракт `buildClassPassport` при неполных M2 или M3 (`src/core/passports/classPassport.ts`):**
+     - При неполном M2 или M3 `buildClassPassport` возвращает иммутабельный паспорт со статусом `status: 'INCOMPLETE'` (`isComplete: false`), **не выбрасывая ошибку** только из-за неполноты входных вычислений;
+     - `profile = null`;
+     - `subclassSpectrum = []`;
+     - `expectedMatrixSummary = { rowCount: null, isSortedByX: false, firstTripleId: null, lastTripleId: null }`;
+     - доступные частичные данные M2 (например, `twoExponent`, `oddPrimeFactors` и вычисленные до остановки счётчики/делители) сохраняются в `numberTheory`.
+   - **Отсутствующий профиль при полных M2 и M3:** если и M2, и M3 завершены (`m2Complete && m3Complete`), но профиль M4-S3 (`ClassProfileFacetResult`) не передан (`null` или `undefined`), `buildClassPassport` выбрасывает `MissingProfileError`.
 
 ---
 
@@ -284,18 +287,24 @@ export interface ClassMatrixRowCore {
 - **Созданные модули:** `src/core/passports/types.ts`, `errors.ts`, `euclidAdapter.ts`, `classPassport.ts`, тест `src/tests/core/classPassportM5S1.test.ts` (подключён в `package.json`).
 - **Зависимости:** M1, M2, M3, M4-S3.
 - **Инварианты:** `CP-INV-01..08`.
-- **Покрытие (проверено в среде реализации Gemini, ожидает независимого аудита):** golden-векторы $r = 1, 2, 3, 6, 35, 105$, `EuclidAdapter` (включая контрпример `{x0, y0} ≠ {v², 2u²}`), строгая сортировка `allTriples` по `x`, сохранение частичных данных M2 при `INCOMPLETE`, разделение `status`/`isComplete` и `certificationStatus`, прогон $r = 1\dots 30$, 0 `float64` (`SCAN_CLEAN`), 9/9 наборов `npm test`, `tsc --noEmit`, `npm run build`.
+- **Покрытие (проверено в среде реализации Gemini, ожидает независимого аудита):** golden-векторы $r = 1, 2, 3, 6, 35, 105$, `EuclidAdapter` (включая контрпример `{x0, y0} ≠ {v², 2u²}`), строгая сортировка `allTriples` по `x`, сохранение частичных данных M2 при `INCOMPLETE`, усиление `CP-INV-07` с негативным тестом на `isSortedByX = undefined` (`PassportInvariantError`), разделение `status`/`isComplete` и `certificationStatus`, прогон $r = 1\dots 30$, 0 `float64` (`SCAN_CLEAN`), `npm test` (10/10 наборов), `tsc --noEmit`, `npm run build`.
 
-### Подфаза `M5-S2`: `ClassMatrix` (`Full` & `Lazy`)
-- **Назначение:** построение многопризнаковой матрицы строк (`PT-R{r}-K{k}-X{x}`), отсортированных по `x`, в режимах `Full` и `Lazy` для групп `ARITH`, `EUCLID`, `GEOM`, `SPORN`, `BERGGREN`.
+### Подфаза `M5-S2`: `ClassMatrix` (`Full` & `Lazy`) *(Статус: `IMPLEMENTED — PENDING INDEPENDENT AUDIT`)*
+- **Назначение:** построение многопризнаковой матрицы строк (`PT-R{r}-K{k}-X{x}`), отсортированных по `x`, в режимах `Full` и `Lazy` для 5 групп `ARITH`, `EUCLID`, `GEOM`, `SPORN`, `BERGGREN` поверх `CORE`/`INDEX` (`Q1 = CLOSED`, `TRANSVERSAL` отложен).
 - **Входы:** `RadiusClassificationResult` (M3) + опциональный кэш `SpornFacetResult[]` / `BerggrenFacetResult[]`.
-- **Выходные интерфейсы:** `ClassMatrixRowCore`, `FullClassMatrixResult`, `LazyClassMatrix`, `buildFullClassMatrix`, `createLazyClassMatrix`, `verifyClassMatrixInvariants`.
-- **Создаваемые модули:** `src/core/passports/classMatrix.ts` (и расширение `types.ts`, `errors.ts`).
-- **Зависимости:** M1, M3, M4-S1, M4-S2, `M5-S1` (`euclidAdapter`, `types`).
-- **Инварианты:** `CM-INV-01..08` (строгая монотонность $x$, тождества $p = 3r+x+y = c+r$, $P = 2p$, $S = ab/2 = rp$, сверка `aDivC === sinA`, `bDivC === cosA`, `treeLegSwapped`, побитовый паритет `Full === Lazy`).
-- **Golden Tests:** $r = 1, 2, 3, 6, 15, 30$; перекрёстная проверка `Full` vs `Lazy` в разных порядках материализации групп; прогон $r = 1..50$.
-- **Negative Tests:** `isComplete === false`, дубликат `tripleId`, нарушение сортировки `x`, несоответствие длин фасетов.
-- **Критерии приёмки:** модульная проверка инвариантов + **совместная приёмка** с `M5-S1` на связку `ClassPassport.matrixSummary <-> ClassMatrix`.
+- **Выходные интерфейсы:** `ClassMatrixRowCore`, `ClassMatrixRowFull`, `ClassMatrixRowView`, `FullClassMatrixResult`, `LazyClassMatrix`, `buildFullClassMatrix`, `createLazyClassMatrix`, `verifyClassMatrixInvariants`, `verifyFullLazyMatrixParity`, `verifyPassportMatrixAlignment`, `findFullMatrixRowByX`, `getFullMatrixRowByIndex`.
+- **Созданные модули:** `src/core/passports/classMatrix.ts` (и расширение `types.ts`, `errors.ts`), тест `src/tests/core/classMatrixM5S2.test.ts` (подключён в `package.json`).
+- **Зависимости:** M1, M3, M4-S1, M4-S2, `M5-S1` (`euclidAdapter`, `types`, `errors`).
+- **Инварианты (`CM-INV-01..08`):**
+  1. `CM-INV-01`: соответствие полей `CORE`, гиперболических уравнений и канонических ID (`tripleId`, `primId`, `classId`) данным M3.
+  2. `CM-INV-02`: непрерывность `rowIdx = 0n..N-1n`, корректность границ заголовка (`rowCount`, `firstTripleId`, `lastTripleId`) и `Object.freeze`-иммутабельность.
+  3. `CM-INV-03`: строгая сортировка по возрастанию `x` и уникальность `tripleId` и `x`.
+  4. `CM-INV-04`: геометрические тождества ($p = 3r+x+y = c+r$, $P = 2p$, $S = ab/2 = r\cdot p$).
+  5. `CM-INV-05`: арифметика `ARITH` (`gcdSides === k`, делимости) и соответствие `EUCLID` (`{x0, y0} = {v², 2u²}`).
+  6. `CM-INV-06`: точная рациональная тригонометрия `aDivC === sinA`, `bDivC === cosA` и паритет со `SPORN` (`asymQ = (b-a)/(a+b)` из M4-S1).
+  7. `CM-INV-07`: согласованность `BERGGREN` (`treeLegSwapped = (A2|A3)`, `canonWord <-> rawWord`, `treeDepth`, `appliesToPrimitiveAncestor`).
+  8. `CM-INV-08`: побитовый паритет `Full === Lazy` во всех порядках материализации (`verifyFullLazyMatrixParity`).
+- **Покрытие (проверено в среде реализации Gemini, ожидает независимого аудита):** Golden-векторы $r = 1, 2, 3, 6, 15, 30, 35, 105, 420$, перекрёстная проверка `Full` vs `Lazy`, `GEOM` после `SPORN` без пересчёта `SpornFacet`, нормализация несортированного `allTriples` на поверхностной копии без мутации входа, негативные тесты (`isComplete === false`, `totalTriplesCount !== expectedTotalCount`, дубликат `tripleId`, дубликат `x`, мутации `CM-INV-01..08`, `verifyPassportMatrixAlignment`), прогон $r = 1..50$ ($339$ строк, $110$ примитивных).
 - **Риски:** объём памяти в `Full` при больших $N$; минимизируется режимом `Lazy` и кэшированием по группам.
 
 ### Подфаза `M5-S3`: `RangeCatalog` & Barrel Export
@@ -357,9 +366,9 @@ export interface ClassMatrixRowCore {
 
 | Риск / Решение | Описание | Статус | Способ закрытия |
 | :--- | :--- | :---: | :--- |
-| **Q1 (`asymQ`)** | Оставить формулу `(b-a)/(a+b)` из M4-S1 или ввести новую меру асимметрии в M5. | `OPEN` | Утверждение пользователем до старта `M5-S2`. |
+| **Q1 (`asymQ`)** | Наследование формулы `(b-a)/(a+b)` из замороженного M4-S1 без переопределения. | `CLOSED` | `Q1 = CLOSED` — зафиксировано наследование из M4-S1. |
 | **Q2 (`float64`)** | Вынос `angleADeg`, `angleBDeg` из ядра `src/core/passports/` во внешний `displayProjection` (M7/M8). | `RECOMMENDED` | Подтверждение пользователем. |
-| **Q4 (`TRANSVERSAL`)** | Неточность $2^{\omega(a)-1}$ для *меньшего* катета $a$ и неопределённость для $k > 1$; необходимость факторизации $a, c$. | `OPEN / DEFERRED` | Вынос за рамки `v0.1` в отдельную подфазу `M5-S4` после уточнения формул. |
+| **Q4 (`TRANSVERSAL`)** | Неточность $2^{\omega(a)-1}$ для *меньшего* катета $a$ и неопределённость для $k > 1$; необходимость факторизации $a, c$. | `OPEN / DEFERRED` | Вынос за рамки `v0.1` в отдельную отложенную подфазу `M5-S4`. |
 | **M2-данные в M3** | `RadiusClassificationResult` не передаёт `omegaStar`, `tauR`, `certificationStatus`. | `SOLVED IN DESIGN` | Явный вход `{ numberTheory, classification, profile }` в `buildClassPassport`. |
 | **Стоимость `BERGGREN`** | Линейная глубина $O(d)$ на больших простых $r$ при `FullMatrix`. | `MITIGATED` | Ленивая материализация `BERGGREN` в `LazyClassMatrix` по умолчанию. |
 
@@ -367,16 +376,16 @@ export interface ClassMatrixRowCore {
 
 ## 14. Implementation Roadmap
 
-1. **Шаг 0 (Sign-off):** утверждение решений по **Q1–Q4** и настоящего `M5_IMPLEMENTATION_BLUEPRINT.md`.
-2. **Шаг 1 (`M5-S1`):** реализация `types.ts`, `errors.ts`, `euclidAdapter.ts`, `classPassport.ts` и независимая приёмка.
-3. **Шаг 2 (`M5-S2`):** реализация `classMatrix.ts` (`Full` + `Lazy`), проверка паритета и совместная приёмка с `M5-S1`.
-4. **Шаг 3 (`M5-S3`):** реализация `rangeCatalog.ts`, `index.ts`, прогоны `r = 1..120` и финальная приёмка M5.
-5. **Шаг 4 (`M5-S4`, опционально):** реализация `transversalFacet.ts` после отдельного утверждения Q4.
+1. **Шаг 0 (Sign-off):** утверждение решений по **Q1–Q4** и настоящего `M5_IMPLEMENTATION_BLUEPRINT.md` (`Q1 = CLOSED`).
+2. **Шаг 1 (`M5-S1`):** реализация `types.ts`, `errors.ts`, `euclidAdapter.ts`, `classPassport.ts` (`IMPLEMENTED — PENDING INDEPENDENT AUDIT`).
+3. **Шаг 2 (`M5-S2`):** реализация `classMatrix.ts` (`Full` + `Lazy`), проверка паритета и совместной согласованности `verifyPassportMatrixAlignment` (`IMPLEMENTED — PENDING INDEPENDENT AUDIT`).
+4. **Шаг 3 (`M5-S3`):** реализация `rangeCatalog.ts`, `index.ts`, прогоны `r = 1..120` и финальная приёмка M5 (**Deferred**).
+5. **Шаг 4 (`M5-S4`, опционально):** реализация `transversalFacet.ts` после отдельного утверждения Q4 (**Deferred**).
 
 | Подфаза | Текущий статус | Зависимости | Критерии готовности |
 | :--- | :--- | :--- | :--- |
-| **`M5-S1`** | **`IMPLEMENTED — PENDING INDEPENDENT AUDIT`** | M1, M2, M3, M4-S3 | `CP-INV-01..08`, `{x0, y0} = {v², 2u²}`, сортировка `x` ↑, сохранение частичных данных M2 при `INCOMPLETE`; проверки среды Gemini пройдены, ожидается независимый аудит. |
-| **`M5-S2`** | **Not Started (Next Step)** | M1, M3, M4-S1, M4-S2, `M5-S1` | `FullClassMatrix` и `LazyClassMatrix`, `CM-INV-01..08`, строгий паритет `Full === Lazy`, Golden + Negative + `r=1..50`, 0 `float64`. |
+| **`M5-S1`** | **`IMPLEMENTED — PENDING INDEPENDENT AUDIT`** | M1, M2, M3, M4-S3 | `CP-INV-01..08` (включая негативный тест `CP-INV-07` на `isSortedByX = undefined`), `{x0, y0} = {v², 2u²}`, сортировка `x` ↑, сохранение частичных данных M2 при `INCOMPLETE`; проверки среды реализации пройдены, ожидается независимый аудит. |
+| **`M5-S2`** | **`IMPLEMENTED — PENDING INDEPENDENT AUDIT`** | M1, M3, M4-S1, M4-S2, `M5-S1` | `FullClassMatrix` и `LazyClassMatrix`, `CM-INV-01..08`, строгий паритет `Full === Lazy`, `verifyPassportMatrixAlignment`, Golden $r = 1..420$ + Negative + `r = 1..50`, 0 `float64`; проверки среды реализации пройдены, ожидается независимый аудит. |
 | **`M5-S3`** | **Deferred** | `M5-S1`, `M5-S2`, M2, M3, M4-S3 | `RangeCatalog`, `src/core/passports/index.ts`, прогоны `r=1..30` и `r=1..120`, несокрытие `INCOMPLETE`. |
 | **`TransversalFacet` *(опц.)*** | **Deferred** | Закрытый `Q4`, M2, `M5-S2` | Утверждены определения (`commonLegPrimA`, `commonHypPrimC`), Golden-сверка с перебором ППТ. |
 
@@ -387,6 +396,6 @@ export interface ClassMatrixRowCore {
 ## Статусы готовности этапа M5
 
 1. **`M1–M4` BASELINE:** `FROZEN` (без изменений).
-2. **`M5-S1` (`ClassPassport` + `EuclidAdapter`):** **`IMPLEMENTED — PENDING INDEPENDENT AUDIT`** — модули `types.ts`, `errors.ts`, `euclidAdapter.ts`, `classPassport.ts` и тест `src/tests/core/classPassportM5S1.test.ts` созданы, добавлены в `package.json` и прошли проверки в среде реализации Gemini (ожидают независимого аудита).
-3. **`M5-S2` (`ClassMatrix`):** **Not Started (Next Step)**.
-4. **`M5-S3` (`RangeCatalog`) и `TransversalFacet`:** **Deferred** (ожидают отдельного старта/утверждения после `M5-S2` и закрытия `Q1`/`Q4`).
+2. **`M5-S1` (`ClassPassport` + `EuclidAdapter`):** **`IMPLEMENTED — PENDING INDEPENDENT AUDIT`** — модули `types.ts`, `errors.ts`, `euclidAdapter.ts`, `classPassport.ts` и тест `src/tests/core/classPassportM5S1.test.ts` (включая усиление `CP-INV-07`) прошли проверки в среде реализации Gemini и ожидают независимого аудита.
+3. **`M5-S2` (`ClassMatrix`):** **`IMPLEMENTED — PENDING INDEPENDENT AUDIT`** — модуль `src/core/passports/classMatrix.ts` (`Full` и `Lazy`, `CM-INV-01..08`, `Q1 = CLOSED`) и тест `src/tests/core/classMatrixM5S2.test.ts` созданы, подключены в `package.json` (`npm test`: 10/10 наборов) и прошли проверки в среде реализации Gemini (ожидают независимого аудита).
+4. **`M5-S3` (`RangeCatalog`) и `TransversalFacet`:** **Deferred** (`TRANSVERSAL` и `M5-S3` отложены; `Price tree` не входит в архитектуру).

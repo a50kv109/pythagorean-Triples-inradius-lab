@@ -58,11 +58,12 @@ $$a = 2r + x, \qquad b = 2r + y, \qquad c = 2r + x + y$$
 - **M4-S2 (`berggrenFacet.ts` — `BerggrenFacet`):** операторы дерева Берггрена (`stepA1`, `stepA2`, `stepA3`), однозначный спуск к родителю по зоне Спорна (`stepParent`, `requireBerggrenParent`), двусторонняя адресация `canonWord` ↔ `rawWord` (`canonWordToRawWord`, `rawWordToCanonWord`, `applyCanonWord`, `applyRawWord`), наследование примитивного предка для масштабированных троек (`appliesToPrimitiveAncestor = (k > 1n)`) и инварианты `BF-INV-01..06`.
 - **M4-S3 (`classProfileFacet.ts` — `ClassProfileFacet`):** агрегированный профиль класса (`buildClassProfileFacet`, `verifyClassProfileInvariants`), связывающий M3, S1 и S2 строгой биекцией 1-к-1 по `tripleId`, строго разделяющий `allTriples` ($N(r)$) и `primitiveTriples` ($T(r)$), вычисляющий точные средние сбалансированным попарным суммированием в `ExactRational`, гистограммы зон, сжатие гипотенузы $c_{\min} < 5r$, глубины примитивного дерева и инварианты `CPF-INV-01..12`.
 
-### 3.5 M5-S1 — `ClassPassport` и `EuclidAdapter` (`src/core/passports/` — `IMPLEMENTED — PENDING INDEPENDENT AUDIT`)
-Собирает детерминированные математические паспорта классов (`CL-R{r}-D{2r}`) поверх готовых выходов M2, M3 и M4-S3 без повторного пересчёта факторизации, классификации или профиля класса:
+### 3.5 M5-S1 и M5-S2 — `ClassPassport`, `EuclidAdapter` и `ClassMatrix` (`src/core/passports/` — `IMPLEMENTED — PENDING INDEPENDENT AUDIT`)
+Собирает детерминированные математические паспорта классов (`CL-R{r}-D{2r}`) и многопризнаковые матрицы троек (`PT-R{r}-K{k}-X{x}`) поверх готовых выходов M1–M4 без повторного пересчёта факторизации, классификации, фасетов или профиля класса (`Q1 = CLOSED`: M5 наследует `asymQ = (b - a)/(a + b)` из замороженного `M4-S1` без переопределения):
 - **`EuclidAdapter` (`euclidAdapter.ts`):** `resolveEuclideanParameters` считывает `triple.euclideanParams` из M3 (с fallback на `recoverEuclideanParameters` при их отсутствии) и проверяет точное соответствие параметров Евклида исходным примитивным сдвигам $\{x_0, y_0\} = \{v^2, 2u^2\}$.
-- **`ClassPassport` (`classPassport.ts`):** `buildClassPassport` и `verifyClassPassportInvariants` реализуют инварианты `CP-INV-01..08`, строго проверяют сортировку `classification.allTriples` по возрастанию `x` для `COMPLETE`-паспортов (`isSortedByX === true`), разделяют вычислительную полноту (`status`, `isComplete`) и математическую сертификацию M2 (`certificationStatus`), а при `INCOMPLETE` сохраняют частичные данные M2 (`profile = null`, `subclassSpectrum = []`, `expectedMatrixSummary.rowCount = null`).
-- **Оставшийся объём M5:** `M5-S2 ClassMatrix` — следующий этап (**не начат**); `M5-S3 RangeCatalog` и `TransversalFacet` **отложены**; `Price tree` не входит в архитектуру проекта.
+- **`ClassPassport` (`classPassport.ts`):** `buildClassPassport` и `verifyClassPassportInvariants` реализуют инварианты `CP-INV-01..08` (включая усиление `CP-INV-07` со строгой проверкой `isSortedByX === false`), строго проверяют сортировку `classification.allTriples` по возрастанию `x` для `COMPLETE`-паспортов, разделяют вычислительную полноту (`status`, `isComplete`) и математическую сертификацию M2 (`certificationStatus`), а при `INCOMPLETE` сохраняют частичные данные M2 (`profile = null`, `subclassSpectrum = []`, `expectedMatrixSummary.rowCount = null`).
+- **`ClassMatrix` (`classMatrix.ts`):** `buildFullClassMatrix` и `createLazyClassMatrix` формируют неизменяемый каркас `CORE`/`INDEX` (проверка уникальности и детерминированная сортировка поверхностной копии по возрастанию `x` без мутации входного `classification.allTriples`, `rowIdx = 0n..N-1n`) с пятью ленивыми кэшируемыми группами (`ARITH`, `EUCLID`, `GEOM` с $p = 3r+x+y = c+r$, `SPORN`, `BERGGREN`), инвариантами `CM-INV-01..08`, строгим паритетом `Full === Lazy` (`verifyFullLazyMatrixParity`) и совместной проверкой `verifyPassportMatrixAlignment`. Неполные входы M3 отклоняются через `IncompleteClassificationError`.
+- **Оставшийся и исключённый объём M5:** `M5-S3 RangeCatalog` и `TRANSVERSAL` (`commonLegPrimA`, `commonHypPrimC`) **отложены**; `Price tree` не входит в архитектуру проекта.
 
 ### 3.6 Историческая геометрия (`src/math/`, `src/components/`, `src/canonical/`)
 - Первоначальная **Лаборатория четырёх кругов** (внешние квадраты $Q_a, Q_b, Q_c$, инциркл $K_i$, описанная окружность Фалеса $K_o$, разбиение инцентром и спектральный анализ) сохранена в репозитории как историческая и визуальная справочная подсистема.
@@ -79,7 +80,7 @@ $$a = 2r + x, \qquad b = 2r + y, \qquad c = 2r + x + y$$
 | **M3 — Движок классификации** | Завершено и проверено (заморожено) | Построитель классов $C(r)$ и подклассов $C_k(r)$. |
 | **M4 — Структурные фасеты** | **ЗАВЕРШЕНО (заморожено)** | `M4-S1 SpornFacet` (Принят), `M4-S2 BerggrenFacet` (Принят), `M4-S3 ClassProfileFacet` (Принят). |
 | **M5-S1 — ClassPassport и EuclidAdapter** | **`IMPLEMENTED — PENDING INDEPENDENT AUDIT`** | `src/core/passports/` (`types.ts`, `errors.ts`, `euclidAdapter.ts`, `classPassport.ts`), `CP-INV-01..08`, `classPassportM5S1.test.ts`. |
-| **M5-S2 — ClassMatrix** | Не начат (следующий этап) | Многопризнаковая матрица класса (`Full` и `Lazy`). |
+| **M5-S2 — ClassMatrix (`Full` и `Lazy`)** | **`IMPLEMENTED — PENDING INDEPENDENT AUDIT`** | `src/core/passports/classMatrix.ts`, 5 ленивых групп (`ARITH`, `EUCLID`, `GEOM`, `SPORN`, `BERGGREN`), `CM-INV-01..08`, `classMatrixM5S2.test.ts`. |
 | **M5-S3 — RangeCatalog / TransversalFacet** | Отложено | Каталог диапазонов (`M5-S3`) и опциональный `TransversalFacet`. *(`Price tree` не входит в архитектуру.)* |
 | **M6 — Независимый верификатор** | Запланировано | Автоматический верификатор проверок `CHK-01..12`. |
 | **M7 — Геометрическая проекция** | Запланировано | SVG-проекция и визуальный адаптер. |
@@ -96,19 +97,19 @@ npm install
 npm run dev       # Запуск Vite dev-сервера на http://localhost:3000
 npm run lint      # Проверка типов TypeScript (tsc --noEmit)
 npm run build     # Сборка продакшн-бандла в dist/
-npm test          # Запуск всех 9 автоматических наборов (геометрия, разбиение инцентром, M1, M2, M3, M4-S1, M4-S2, M4-S3, M5-S1)
+npm test          # Запуск всех 10 автоматических наборов (геометрия, разбиение инцентром, M1, M2, M3, M4-S1, M4-S2, M4-S3, M5-S1, M5-S2)
 ```
 
 ---
 
 ## 6. Политика верификации и документация
 - **Точность превыше всего:** Все дискретные модули (`src/core/*`) используют строго `BigInt` и `ExactRational`; `float64` (`Math.*`, `Number()`, `parseFloat`) запрещён.
-- **Безопасность простых чисел и полноты:** Доказанная простота никогда не смешивается с вероятностной; неполные классификации (`isComplete === false`) отклоняются в M4 и явно фиксируются в M5-S1 (`status: 'INCOMPLETE'` с сохранением частичных данных M2 и `profile = null`).
-- **Контрольные эталоны и проверки среды реализации:** Эталоны M1–M4 проверены на $r=1\dots 30$ ($T=61, N=174$), $r=1\dots 50$ ($110$ уникальных путей дерева Берггрена), $r=1\dots 100$ ($T=249, N=855$) и $r=1\dots 120$ ($120$ классов, $N=1098, T=311$). По отчёту среды реализации Gemini, тест `M5-S1`, все 9 наборов `npm test`, `tsc --noEmit`, `npm run build` и статический скан `src/core/passports/` (`SCAN_CLEAN`) пройдены и **ожидают независимого аудита**.
+- **Безопасность простых чисел и полноты:** Доказанная простота никогда не смешивается с вероятностной; неполные классификации (`isComplete === false`) отклоняются в M4 и `M5-S2` `ClassMatrix` (`INCOMPLETE_CLASSIFICATION_RESULT`) и явно фиксируются в `M5-S1` (`status: 'INCOMPLETE'` с сохранением частичных данных M2 и `profile = null`).
+- **Контрольные эталоны и проверки среды реализации:** Эталоны M1–M4 проверены на $r=1\dots 30$ ($T=61, N=174$), $r=1\dots 50$ ($110$ уникальных путей дерева Берггрена, $339$ строк матрицы), $r=1\dots 100$ ($T=249, N=855$) и $r=1\dots 120$ ($120$ классов, $N=1098, T=311$). По проверкам среды реализации Gemini, тесты `M5-S1` и `M5-S2`, все 10 наборов `npm test`, `tsc --noEmit`, `npm run build` и статический скан `src/core/passports/` (`SCAN_CLEAN`) пройдены и **ожидают независимого аудита**.
 - **Документация уровня M4–M5:**
   - Архитектура и границы: [`docs/architecture/SYSTEM_ARCHITECTURE.md`](docs/architecture/SYSTEM_ARCHITECTURE.md), [`docs/architecture/MODULE_BOUNDARIES.md`](docs/architecture/MODULE_BOUNDARIES.md)
   - Математическая спецификация и API M4: [`docs/mathematics/M4_MATHEMATICAL_SPECIFICATION.md`](docs/mathematics/M4_MATHEMATICAL_SPECIFICATION.md), [`docs/architecture/M4_API_REFERENCE.md`](docs/architecture/M4_API_REFERENCE.md)
-  - API M5-S1 и архитектурный план: [`docs/architecture/M5_API_REFERENCE.md`](docs/architecture/M5_API_REFERENCE.md), [`M5_IMPLEMENTATION_BLUEPRINT.md`](M5_IMPLEMENTATION_BLUEPRINT.md)
+  - API M5-S1 / M5-S2 и архитектурный план: [`docs/architecture/M5_API_REFERENCE.md`](docs/architecture/M5_API_REFERENCE.md), [`M5_IMPLEMENTATION_BLUEPRINT.md`](M5_IMPLEMENTATION_BLUEPRINT.md)
   - Тесты и статус реализации: [`docs/development/IMPLEMENTATION_STATUS.md`](docs/development/IMPLEMENTATION_STATUS.md), [`docs/development/M4_VERIFICATION_AND_TESTS.md`](docs/development/M4_VERIFICATION_AND_TESTS.md), [`M4_STRUCTURAL_FACETS_FINAL.md`](M4_STRUCTURAL_FACETS_FINAL.md)
 
 ---
