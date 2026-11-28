@@ -75,6 +75,8 @@ All signatures below match the actual TypeScript exports in `src/core/facets/`.
 - **`ClassProfileFacetResult`**: `{ readonly classId: string; readonly r: bigint; readonly cMin: bigint; readonly cMax: bigint; readonly cMinRatio: ExactRational; readonly hasSub5rCompression: boolean; readonly spornXMin: ExactRational; readonly spornXMax: ExactRational; readonly allTriples: ClassPopulationMetrics; readonly primitiveTriples: PrimitivePopulationMetrics }`.
 - **`ClassProfileFacetError`** (`code: ClassProfileErrorCode`): `'INCOMPLETE_CLASSIFICATION_RESULT' | 'INVALID_RADIUS' | 'FACET_COUNT_MISMATCH' | 'TRIPLE_ID_MISMATCH' | 'DUPLICATE_TRIPLE_ID' | 'CLASS_ID_MISMATCH' | 'PRIMITIVE_SET_EMPTY' | 'INVARIANT_VIOLATION'`.
 
-### Known Constraints
+### Known Constraints & Computational Complexity
 - Batch facet builders reject incomplete M3 results (`isComplete === false`) rather than emitting partial metrics.
-- `computeBerggrenFacetForTriple` and `verifyBerggrenFacetInvariants` reconstruct full tree words from `(3, 4, 5)` in $O(\text{treeDepth}) \le O(r_0)$ BigInt steps.
+- **Parent-path reconstruction complexity ($O(d)$):** `computeBerggrenFacetForTriple` recovers `canonWord` via sequential parent descent (`stepParent`), taking $O(d)$ BigInt operations where $d = \text{treeDepth} \le r_0 - 1$ (attaining $d = r_0 - 1$ on the boundary series $x_0 = 1$).
+- **Independent path re-verification:** `verifyBerggrenFacetInvariants` re-evaluates `applyCanonWord(canonWord)` and `applyRawWord(rawWord)` in $O(d)$ as an intentional verifiability-over-speed trade-off so word reconstruction is independently self-checked.
+- **No artificial radius/depth limits:** No arbitrary depth or radius cutoffs are imposed inside `BerggrenFacet`; optimization (e.g., ancestor-level caching or optional verification flags) is deferred until a concrete measured performance bottleneck and separate architectural decision arise.

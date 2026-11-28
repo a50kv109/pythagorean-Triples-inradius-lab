@@ -105,8 +105,8 @@ console.log('✓ Section 1: Root (3, 4, 5), direct children, and immutability pa
 // ============================================================================
 // 2 & 3. Exact A1, A2, A3 Transformations, Canonical Ordering & legSwapped
 // ============================================================================
-// Verify all 9 level-2 transitions from (5, 12, 13), (8, 15, 17), and (7, 24, 25)
-const s51213 = rootA1.canonTriple; // (5, 12, 13), r=2, x=1, y=8
+// Verify 12 level-2 transitions: (5, 12, 13), (20, 21, 29), (8, 15, 17), and (7, 24, 25)
+const s51213 = rootA1.canonTriple; // A1(root) = (5, 12, 13), r=2, x=1, y=8
 const c51213_A1 = stepA1(s51213);
 const c51213_A2 = stepA2(s51213);
 const c51213_A3 = stepA3(s51213);
@@ -120,7 +120,30 @@ assert.deepEqual(c51213_A3.rawTriple, { a: 45n, b: 28n, c: 53n });
 assert.deepEqual(c51213_A3.canonTriple, { a: 28n, b: 45n, c: 53n, r: 10n, x: 8n, y: 25n });
 assert.equal(c51213_A3.legSwapped, true);
 
-const s81517 = rootA3.canonTriple; // (8, 15, 17), r=3, x=2, y=9
+const s202129 = rootA2.canonTriple; // A2(root) = (20, 21, 29), r=6, x=8, y=9
+const c202129_A1 = stepA1(s202129);
+const c202129_A2 = stepA2(s202129);
+const c202129_A3 = stepA3(s202129);
+
+assert.deepEqual(c202129_A1.rawTriple, { a: 36n, b: 77n, c: 85n });
+assert.deepEqual(c202129_A1.canonTriple, { a: 36n, b: 77n, c: 85n, r: 14n, x: 8n, y: 49n });
+assert.equal(c202129_A1.legSwapped, false);
+assert.equal(c202129_A1.spornZone, 'Z1_A1');
+assert.ok(eqRational(c202129_A1.spornX, createRational(4n, 7n)));
+
+assert.deepEqual(c202129_A2.rawTriple, { a: 120n, b: 119n, c: 169n });
+assert.deepEqual(c202129_A2.canonTriple, { a: 119n, b: 120n, c: 169n, r: 35n, x: 49n, y: 50n });
+assert.equal(c202129_A2.legSwapped, true);
+assert.equal(c202129_A2.spornZone, 'Z2_A2');
+assert.ok(eqRational(c202129_A2.spornX, createRational(7n, 5n)));
+
+assert.deepEqual(c202129_A3.rawTriple, { a: 80n, b: 39n, c: 89n });
+assert.deepEqual(c202129_A3.canonTriple, { a: 39n, b: 80n, c: 89n, r: 15n, x: 9n, y: 50n });
+assert.equal(c202129_A3.legSwapped, true);
+assert.equal(c202129_A3.spornZone, 'Z3_A3');
+assert.ok(eqRational(c202129_A3.spornX, createRational(3n, 5n)));
+
+const s81517 = rootA3.canonTriple; // A3(root) = (8, 15, 17), r=3, x=2, y=9
 const c81517_A1 = stepA1(s81517);
 const c81517_A2 = stepA2(s81517);
 const c81517_A3 = stepA3(s81517);
@@ -160,7 +183,23 @@ assert.ok(
 );
 assert.ok(eqRational(c81517_A3.spornX, divRational(rTwo, addRational(t815, rTwo))));
 
-console.log('✓ Sections 2 & 3: Exact A1/A2/A3 transitions, f1/f2/f3 ratios, and legSwapped passed.');
+// Exact rational fractional-linear transformations f1, f2, f3 check on A2(root) = (20, 21, 29) where t = 8/6 = 4/3
+const t2021 = createRational(8n, 6n);
+assert.ok(eqRational(t2021, createRational(4n, 3n)));
+const f1_2021 = divRational(t2021, addRational(RATIONAL_ONE, t2021));
+const f2_2021 = divRational(
+  mulRational(rTwo, addRational(t2021, RATIONAL_ONE)),
+  addRational(t2021, rTwo)
+);
+const f3_2021 = divRational(rTwo, addRational(t2021, rTwo));
+assert.ok(eqRational(f1_2021, createRational(4n, 7n)));
+assert.ok(eqRational(f2_2021, createRational(7n, 5n)));
+assert.ok(eqRational(f3_2021, createRational(3n, 5n)));
+assert.ok(eqRational(c202129_A1.spornX, f1_2021));
+assert.ok(eqRational(c202129_A2.spornX, f2_2021));
+assert.ok(eqRational(c202129_A3.spornX, f3_2021));
+
+console.log('✓ Sections 2 & 3: Exact A1/A2/A3 transitions (12 checks incl. A2(root)), f1/f2/f3 ratios, and legSwapped passed.');
 
 // ============================================================================
 // 4 & 5. Parent Descent, Reconstruction & Two Address Systems (canonWord / rawWord)

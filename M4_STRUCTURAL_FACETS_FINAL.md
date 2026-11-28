@@ -15,7 +15,7 @@
 | **M2** | `Number Theory Engine` (`src/core/factorization/`) | **ACCEPTED / STABILIZED / FROZEN** |
 | **M3** | `Classification Engine` (`src/core/classification/`) | **ACCEPTED / FROZEN** |
 | **M4-S1** | `SpornFacet` (`src/core/facets/spornFacet.ts`) | **ACCEPTED** |
-| **M4-S2** | `BerggrenFacet` (`src/core/facets/berggrenFacet.ts`) | **ACCEPTED WITH NON-BLOCKING NOTES** |
+| **M4-S2** | `BerggrenFacet` (`src/core/facets/berggrenFacet.ts`) | **ACCEPTED** |
 | **M4-S3** | `ClassProfileFacet` (`src/core/facets/classProfileFacet.ts`) | **ACCEPTED** |
 | **M4** | **Structural Facets (пакет целиком)** | **COMPLETED** |
 | **M5–M8** | Passports, Verifier, Projection, Export | *Не начинались (запланированы)* |
@@ -45,7 +45,7 @@
   - `src/tests/core/factorizationM2.test.ts` (6 секций) — PASS
   - `src/tests/core/classificationM3.test.ts` (6 секций) — PASS
   - `src/tests/core/spornFacetM4S1.test.ts` (`G1–G9`, $r = 1\dots 30$: 174 тройки) — PASS
-  - `src/tests/core/berggrenFacetM4S2.test.ts` ($r = 1\dots 30$: 174 тройки / 61 ППТ; $r = 1\dots 50$: 110 уникальных путей) — PASS
+  - `src/tests/core/berggrenFacetM4S2.test.ts` (корень, 12 переходов 2-го уровня включая все 3 потомка `A2(root)`, $r = 1\dots 30$: 174 тройки / 61 ППТ; $r = 1\dots 50$: 110 уникальных путей) — PASS
   - `src/tests/core/classProfileFacetM4S3.test.ts` (Golden `r=1, 2, 3, 15, 35, 105`, 14 мутаций `CPF-INV-01..12`, 12 негативных тестов `P-NEG-1..4`+, крупный класс `r=420` $N=81>50$, прогон `r=1..120`: 120 классов, 1098 троек, 311 ППТ, 0 нарушений) — PASS
 - **`npx tsc --noEmit` / `npm run lint`:** **PASS** (0 ошибок).
 - **`npm run build` (`vite build`):** **PASS** (1724 модуля собраны в `dist/`).
@@ -78,8 +78,8 @@
 
 ---
 
-## 5. Известные неблокирующие замечания
+## 5. Архитектурные характеристики и примечания
 
-1. В `src/tests/core/berggrenFacetM4S2.test.ts` (секция 2) явный список 9 переходов 2-го уровня приведён для `(5,12,13)`, `(8,15,17)` и `(7,24,25)` вместо `A2(root) = (20,21,29)` (при этом все 3 потомка `A2(root)` покрыты в секциях 9–10 и прямом аудите M4-S2).
-2. `computeBerggrenFacetForTriple` и `verifyBerggrenFacetInvariants` воспроизводят слово от `(3,4,5)` за $O(\text{treeDepth}) \le O(r_0)$ шагов (`treeDepth = r_0 - 1` для $x_0 = 1$). Это штатно для текущего исследовательского диапазона и требует учёта при масштабировании к $r_0 \gg 10^4$.
+1. **Покрытие ветви `A2(root)` закрыто:** в секциях 2–3 `src/tests/core/berggrenFacetM4S2.test.ts` явно проверяются все **12** переходов (прежние 9 для `(5,12,13)`, `(8,15,17)`, `(7,24,25)` и все 3 потомка `A2(root) = (20,21,29)` — `(36,77,85)`, `(119,120,169)`, `(39,80,89)`, плюс точные соотношения $f_1, f_2, f_3$ при $t = 8/6 = 4/3$).
+2. **Линейная сложность восстановления пути $O(d)$ (осознанная характеристика архитектуры, не дефект корректности):** `computeBerggrenFacetForTriple` восстанавливает `canonWord` спуском `stepParent`, а `verifyBerggrenFacetInvariants` повторно воспроизводит `canonWord` и `rawWord` с точностью $O(d)$, где $d = \text{treeDepth} \le r_0 - 1$ (на граничной серии $x_0 = 1$ достигается $d = r_0 - 1$). Это осознанный обмен дополнительных вычислений на независимую самопроверку реконструкции пути; искусственные ограничения глубины/радиуса не вводятся, а оптимизация отложена до появления измеренного узкого места производительности.
 3. Рабочая среда не является локальным `.git`-репозиторием (`fatal: not a git repository`), поэтому git tag/commit в среде не создавались; контрольная точка зафиксирована документом `M4_STRUCTURAL_FACETS_FINAL.md`.

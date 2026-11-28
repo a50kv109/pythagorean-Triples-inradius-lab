@@ -14,10 +14,10 @@
   - Тесты: `src/tests/core/spornFacetM4S1.test.ts`, `src/tests/core/berggrenFacetM4S2.test.ts`, `src/tests/core/classProfileFacetM4S3.test.ts`, `package.json` (`scripts.test`).
   - Документация и контрольная точка: `README.md`, `README_RU.md`, `CHANGELOG.md`, `docs/architecture/SYSTEM_ARCHITECTURE.md`, `docs/architecture/MODULE_BOUNDARIES.md`, `docs/architecture/M4_API_REFERENCE.md`, `docs/mathematics/M4_MATHEMATICAL_SPECIFICATION.md`, `docs/development/DEVELOPMENT_ROADMAP.md`, `docs/development/IMPLEMENTATION_STATUS.md`, `docs/development/VERIFICATION_POLICY.md`, `docs/development/M4_VERIFICATION_AND_TESTS.md`, `M4_STRUCTURAL_FACETS_FINAL.md`.
 - **Результаты верификации:** `npm test` (все 8 наборов тестов: геометрия, разбиение инцентром, M1, M2, M3, M4-S1, M4-S2, M4-S3) — **PASS**; `npx tsc --noEmit` — **0 ошибок**; `npm run build` (`vite build`) — **PASS**; статический скан `src/core/facets/` на `Number()`/`Math.*`/`float64` — **0 совпадений**.
-- **Известные неблокирующие замечания:**
-  1. В `berggrenFacetM4S2.test.ts` секция 2 явно перечисляет тройки-потомки для `(5,12,13)`, `(8,15,17)` и `(7,24,25)` вместо `A2(root) = (20,21,29)`, однако все 3 потомка `A2(root)` (`(36,77,85)`, `(119,120,169)`, `(39,80,89)`) проверены в секциях 9–10 и приёмке S2.
-  2. `computeBerggrenFacetForTriple` и `verifyBerggrenFacetInvariants` воспроизводят полный путь от корня за $O(d) \le O(r_0)$, что приемлемо для текущего исследовательского диапазона, но при масштабировании к $r_0 \gg 10^4$ граничная ветвь $x_0 = 1$ даёт линейный рост числа шагов.
-  3. Среда workspace не содержит `.git`, поэтому локальный git-коммит/тег в данной среде не создавался.
+- **Корректирующая доработка M4-S2 (`M4-S2 Maintenance — 2026-11-28`):**
+  - В `src/tests/core/berggrenFacetM4S2.test.ts` (секции 2–3) к прежним 9 переходам добавлены все 3 перехода от `A2(root) = (20,21,29)` (`(36,77,85)`, `(119,120,169)`, `(39,80,89)`) и точные проверки $f_1(4/3)=4/7$, $f_2(4/3)=7/5$, $f_3(4/3)=3/5$ (итого 12 переходов второго уровня).
+  - В документации зафиксирована осознанная сложность восстановления и самопроверки пути $O(d)$ ($d \le r_0 - 1$, $d = r_0 - 1$ при $x_0 = 1$); публичные API и production-алгоритмы M1–M4 не изменялись.
+- **Среда сборки:** рабочая среда не содержит `.git`, поэтому локальный git-коммит/тег в данной среде не создавался.
 
 ## [M3 — Classification Engine Completed] — 2026-11-27
 
