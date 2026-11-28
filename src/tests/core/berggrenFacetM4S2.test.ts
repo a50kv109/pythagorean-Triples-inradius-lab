@@ -105,7 +105,7 @@ console.log('✓ Section 1: Root (3, 4, 5), direct children, and immutability pa
 // ============================================================================
 // 2 & 3. Exact A1, A2, A3 Transformations, Canonical Ordering & legSwapped
 // ============================================================================
-// Verify 12 level-2 transitions: (5, 12, 13), (20, 21, 29), (8, 15, 17), and (7, 24, 25)
+// Verify 12 explicit transitions: 9 level-2 and 3 level-3 transitions (level-1 parents: (5, 12, 13), (20, 21, 29), (8, 15, 17); level-2 parent: (7, 24, 25) = A1(A1(root)))
 const s51213 = rootA1.canonTriple; // A1(root) = (5, 12, 13), r=2, x=1, y=8
 const c51213_A1 = stepA1(s51213);
 const c51213_A2 = stepA2(s51213);
