@@ -58,7 +58,13 @@ Constructed directly over M1–M3 outputs without duplicating factorization, div
 - **M4-S2 (`berggrenFacet.ts` — `BerggrenFacet`):** Ternary Berggren tree operators (`stepA1`, `stepA2`, `stepA3`), unique zone-based parent descent (`stepParent`, `requireBerggrenParent`), bidirectional canonical/raw word addressing (`canonWordToRawWord`, `rawWordToCanonWord`, `applyCanonWord`, `applyRawWord`), primitive-ancestor inheritance for scaled triples (`appliesToPrimitiveAncestor = (k > 1n)`), and invariants `BF-INV-01..06`.
 - **M4-S3 (`classProfileFacet.ts` — `ClassProfileFacet`):** Per-class exact statistical aggregation (`buildClassProfileFacet`, `verifyClassProfileInvariants`) joining M3, S1, and S2 via strict 1-to-1 `tripleId` bijection, separating `allTriples` ($N(r)$) and `primitiveTriples` ($T(r)$), computing balanced pairwise `ExactRational` means, zone histograms, hypotenuse compression ($c_{\min} < 5r$), primitive-only Berggren depths, and invariants `CPF-INV-01..12`.
 
-### 3.5 Legacy Geometry Subsystem (`src/math/`, `src/components/`, `src/canonical/`)
+### 3.5 M5-S1 — `ClassPassport` & `EuclidAdapter` (`src/core/passports/` — `IMPLEMENTED — PENDING INDEPENDENT AUDIT`)
+Assembles deterministic class passports (`CL-R{r}-D{2r}`) over ready M2, M3, and M4-S3 outputs without recomputing factorization, classification, or class profile metrics:
+- **`EuclidAdapter` (`euclidAdapter.ts`):** `resolveEuclideanParameters` reads M3 `triple.euclideanParams` (falling back to M3 `recoverEuclideanParameters` when omitted) and enforces exact primitive shift correspondence $\{x_0, y_0\} = \{v^2, 2u^2\}$.
+- **`ClassPassport` (`classPassport.ts`):** `buildClassPassport` and `verifyClassPassportInvariants` enforce `CP-INV-01..08`, strict ascending `x` ordering of `classification.allTriples` for `COMPLETE` passports (`isSortedByX === true`), explicit separation of computational completeness (`status`, `isComplete`) from M2 mathematical certification (`certificationStatus`), and preservation of partial M2 data on `INCOMPLETE` (`profile = null`, `subclassSpectrum = []`, `expectedMatrixSummary.rowCount = null`).
+- **Remaining M5 Scope:** `M5-S2 ClassMatrix` is the next step (**Not Started**); `M5-S3 RangeCatalog` and `TransversalFacet` are **Deferred**; `Price tree` is not part of the architecture.
+
+### 3.6 Legacy Geometry Subsystem (`src/math/`, `src/components/`, `src/canonical/`)
 - The original **Four Circles Laboratory** (exterior squares $Q_a, Q_b, Q_c$, incircle $K_i$, Thales circumcircle $K_o$, incenter partition, and spectral analysis) is preserved intact as a legacy and visual reference subsystem within the repository.
 
 ---
@@ -68,11 +74,13 @@ Constructed directly over M1–M3 outputs without duplicating factorization, div
 | Milestone | Status | Description |
 | :--- | :--- | :--- |
 | **Phase 1 — Workspace & Shell** | Completed | React UI, navigation, panels, localization. |
-| **M1 — Exact Computation Core** | Completed & Audited | Autonomous `BigInt` arithmetic and `ExactRational` numbers. |
-| **M2 — Number Theory Engine** | Completed & Stabilized | Factorization, primality certification, divisors, hyperbola pairs, and counters. |
-| **M3 — Classification Engine** | Completed & Verified | Triangle class $C(r)$ and sub-class $C_k(r)$ builder. |
-| **M4 — Structural Facets** | **COMPLETED** | `M4-S1 SpornFacet` (Accepted), `M4-S2 BerggrenFacet` (Accepted), `M4-S3 ClassProfileFacet` (Accepted). |
-| **M5 — Class Passports & Matrices** | Planned | Class passports, multi-attribute matrices, and range catalogs. |
+| **M1 — Exact Computation Core** | Completed & Audited (Frozen) | Autonomous `BigInt` arithmetic and `ExactRational` numbers. |
+| **M2 — Number Theory Engine** | Completed & Stabilized (Frozen) | Factorization, primality certification, divisors, hyperbola pairs, and counters. |
+| **M3 — Classification Engine** | Completed & Verified (Frozen) | Triangle class $C(r)$ and sub-class $C_k(r)$ builder. |
+| **M4 — Structural Facets** | **COMPLETED (Frozen)** | `M4-S1 SpornFacet` (Accepted), `M4-S2 BerggrenFacet` (Accepted), `M4-S3 ClassProfileFacet` (Accepted). |
+| **M5-S1 — ClassPassport & EuclidAdapter** | **IMPLEMENTED — PENDING INDEPENDENT AUDIT** | `src/core/passports/` (`types.ts`, `errors.ts`, `euclidAdapter.ts`, `classPassport.ts`), `CP-INV-01..08`, `classPassportM5S1.test.ts`. |
+| **M5-S2 — ClassMatrix** | Not Started (Next) | Multi-attribute class matrix (`Full` & `Lazy`). |
+| **M5-S3 — RangeCatalog / TransversalFacet** | Deferred | Range catalog (`M5-S3`) and optional `TransversalFacet`. *(Note: `Price tree` is excluded from architecture.)* |
 | **M6 — Independent Verifier** | Planned | Automated verifier checking `CHK-01..12`. |
 | **M7 — Geometric Projection** | Planned | SVG projection and visual adapter. |
 | **M8 — Export & Analytics** | Planned | JSON/CSV export and workspace reporting. |
@@ -88,19 +96,20 @@ npm install
 npm run dev       # Starts Vite dev server at http://localhost:3000
 npm run lint      # Runs TypeScript type-checking (tsc --noEmit)
 npm run build     # Builds production bundle into dist/
-npm test          # Runs all 8 automated suites (Geometry, Incenter Partition, M1, M2, M3, M4-S1, M4-S2, M4-S3)
+npm test          # Runs all 9 automated suites (Geometry, Incenter Partition, M1, M2, M3, M4-S1, M4-S2, M4-S3, M5-S1)
 ```
 
 ---
 
 ## 6. Verification Policy & Documentation
 - **Exact-First:** All discrete core routines (`src/core/*`) use pure `BigInt` and `ExactRational`; floating-point math (`Math.*`, `Number()`, `parseFloat`) is forbidden.
-- **Primality & Completeness Safety:** Probable primality is never conflated with proven primality; incomplete classifications (`isComplete === false`) are rejected with explicit error codes across M4.
-- **Golden Benchmarks:** Verified across $r = 1\dots 30$ ($T=61, N=174$), $r = 1\dots 50$ ($110$ unique primitive tree paths), $r = 1\dots 100$ ($T=249, N=855$), and $r = 1\dots 120$ ($120$ classes, $N=1098$, $T=311$).
+- **Primality & Completeness Safety:** Probable primality is never conflated with proven primality; incomplete classifications (`isComplete === false`) are rejected across M4 and handled explicitly in M5-S1 (`status: 'INCOMPLETE'` with partial M2 data preserved and `profile = null`).
+- **Golden Benchmarks & Implementation Checks:** M1–M4 benchmarks are verified across $r = 1\dots 30$ ($T=61, N=174$), $r = 1\dots 50$ ($110$ unique primitive tree paths), $r = 1\dots 100$ ($T=249, N=855$), and $r = 1\dots 120$ ($120$ classes, $N=1098$, $T=311$). In the Gemini implementation environment, `M5-S1` tests, all 9 `npm test` suites, `tsc --noEmit`, `npm run build`, and `src/core/passports/` static scan (`SCAN_CLEAN`) passed and **await independent audit**.
 - **Technical Reference Docs:**
   - Architecture & Boundaries: [`docs/architecture/SYSTEM_ARCHITECTURE.md`](docs/architecture/SYSTEM_ARCHITECTURE.md), [`docs/architecture/MODULE_BOUNDARIES.md`](docs/architecture/MODULE_BOUNDARIES.md)
   - M4 Mathematical Spec & API: [`docs/mathematics/M4_MATHEMATICAL_SPECIFICATION.md`](docs/mathematics/M4_MATHEMATICAL_SPECIFICATION.md), [`docs/architecture/M4_API_REFERENCE.md`](docs/architecture/M4_API_REFERENCE.md)
-  - Verification & Checkpoint: [`docs/development/M4_VERIFICATION_AND_TESTS.md`](docs/development/M4_VERIFICATION_AND_TESTS.md), [`M4_STRUCTURAL_FACETS_FINAL.md`](M4_STRUCTURAL_FACETS_FINAL.md)
+  - M5-S1 API & Blueprint: [`docs/architecture/M5_API_REFERENCE.md`](docs/architecture/M5_API_REFERENCE.md), [`M5_IMPLEMENTATION_BLUEPRINT.md`](M5_IMPLEMENTATION_BLUEPRINT.md)
+  - Verification & Status: [`docs/development/IMPLEMENTATION_STATUS.md`](docs/development/IMPLEMENTATION_STATUS.md), [`docs/development/M4_VERIFICATION_AND_TESTS.md`](docs/development/M4_VERIFICATION_AND_TESTS.md), [`M4_STRUCTURAL_FACETS_FINAL.md`](M4_STRUCTURAL_FACETS_FINAL.md)
 
 ---
 
