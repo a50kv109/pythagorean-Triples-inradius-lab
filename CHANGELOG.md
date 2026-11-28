@@ -14,11 +14,15 @@
   - **Каркас `CORE`/`INDEX` и политика B5:** проверка уникальности `tripleId` (`DUPLICATE_TRIPLE_ID`) и `x` (`DUPLICATE_X`), детерминированная сортировка **поверхностной копии** по возрастанию `x` без мутации входного `classification.allTriples`, присвоение непрерывных индексов `rowIdx = 0n..N-1n`.
   - **Пять ленивых кэшируемых групп:** `ARITH`, `EUCLID` (через `resolveEuclideanParameters`), `GEOM` ($p = 3r+x+y = c+r$, $P = 2p$, $S = ab/2 = rp$; переиспользование кэшированных `sinA`/`cosA` при материализации после `SPORN` без повторного расчёта `SpornFacet`), `SPORN` (`M4-S1`) и `BERGGREN` (`M4-S2`, `treeLegSwapped = (A2|A3)`).
   - **Политика неполноты (B10) и инварианты `CM-INV-01..08`:** отказ на `isComplete === false` и `totalTriplesCount !== expectedTotalCount` через `IncompleteClassificationError`; независимая верификация `CM-INV-01..08` и совместная проверка `verifyPassportMatrixAlignment`.
+  - **Доработка `BERGGREN` validation hardening (`CM-INV-07` + кэш фасетов):**
+    - **`CM-INV-07` (BERGGREN mathematical identity):** в `verifyClassMatrixInvariants` проверяется не только внутренняя согласованность `canonWord`/`rawWord` (`canonWordToRawWord`, `treeDepth`, `parentOperator`, `treeLegSwapped`, `appliesToPrimitiveAncestor`, эквивалентность корня `(3,4,5)`), но и точное восстановление примитивного предка `(a0, b0, c0, r0, x0, y0)` из `CORE`-параметров строки через функции `M4-S2` `applyCanonWord()` и `applyRawWord()`.
+    - **Строгая проверка входного кэша фасетов (`indexFacetCache`):** сопоставление по `tripleId` с тройкой M3 (`tripleId`, `classId`, `r`, `primId`, `k`, `isPrimitive`, а для `BerggrenFacetResult` также `appliesToPrimitiveAncestor`, все поля `primitiveAncestor` `a, b, c, x, y` и радиус предка `primitiveRadius`) и дополнительная проверка инвариантами `M4-S2` `verifyBerggrenFacetInvariants()` (`FACET_CACHE_MISMATCH` при несовместимом кэше; `M4-S2` не изменялся).
 - **Тесты и конфигурация:**
-  - Создан тест `src/tests/core/classMatrixM5S2.test.ts` (Golden $r = 1, 2, 3, 6, 15, 30, 35, 105, 420$, паритет `Full === Lazy` во всех порядках, `GEOM` после `SPORN` без пересчёта, нормализация несортированного `allTriples` на копии, мутации `CM-INV-01..08`, негативные guards, `verifyPassportMatrixAlignment`, диапазон $r = 1\dots 50$).
+  - Создан и дополнен тест `src/tests/core/classMatrixM5S2.test.ts` (Golden $r = 1, 2, 3, 6, 15, 30, 35, 105, 420$, паритет `Full === Lazy` во всех порядках, `GEOM` после `SPORN` без пересчёта, нормализация несортированного `allTriples` на копии, мутации `CM-INV-01..08`, обязательные аудит-тесты A–E для `BERGGREN` и кэша фасетов, негативные guards, `verifyPassportMatrixAlignment`, диапазон $r = 1\dots 50$).
   - Обновлён `package.json` (`scripts.test` теперь последовательно запускает 10 наборов тестов).
 - **Проверки среды реализации (Gemini; ожидают независимого аудита):**
-  - `npx tsx src/tests/core/classPassportM5S1.test.ts`, `npx tsx src/tests/core/classMatrixM5S2.test.ts`, все 10 наборов `npm test`, `npx tsc --noEmit`, `npm run build` — **PASS**; статический скан `src/core/passports/` — **`SCAN_CLEAN`**.
+  - `npx tsx src/tests/core/classPassportM5S1.test.ts`, `npx tsx src/tests/core/classMatrixM5S2.test.ts` (включая аудит-тесты A–E), все 10 наборов `npm test`, `npx tsc --noEmit`, `npm run build` — **PASS**; статический скан `src/core/passports/` — **`SCAN_CLEAN`**.
+
 
 ## [M5-S1 — ClassPassport + EuclidAdapter (`IMPLEMENTED — PENDING INDEPENDENT AUDIT`)] — 2026-11-28
 

@@ -59,6 +59,7 @@ All signatures below match the actual TypeScript exports in `src/core/passports/
   Builds an immutable `CORE`/`INDEX` matrix backbone with on-demand cached group materialization:
   - **Incomplete Policy:** Rejects `classification.isComplete === false` or `totalTriplesCount !== expectedTotalCount` with `IncompleteClassificationError` (`code: 'INCOMPLETE_CLASSIFICATION_RESULT'`).
   - **B5 Copy-Sort Policy:** Validates every triple (`r >= 1n`, Pythagorean/hyperbola identities, canonical IDs), rejects duplicate `tripleId` (`DUPLICATE_TRIPLE_ID`) or duplicate `x` (`DUPLICATE_X`), sorts a **shallow copy** deterministically by ascending `x` without mutating `classification.allTriples`, and assigns continuous `rowIdx = 0n..N-1n` after sorting.
+  - **Facet Cache Validation:** Optional `options.spornFacets` / `options.berggrenFacets` are matched 1-to-1 by `tripleId` against the corresponding M3 triple (`tripleId`, `classId`, `r`, `primId`, `k`, `isPrimitive`, plus `appliesToPrimitiveAncestor`, `primitiveAncestor` fields `a, b, c, x, y`, and `primitiveRadius` for Berggren facets) and checked via `verifySpornFacetInvariants()` / `verifyBerggrenFacetInvariants()` (`FACET_CACHE_MISMATCH` on mismatch).
   - **Lazy Caching:** Methods `hasGroup`, `getMaterializedGroups`, `materializeGroup`, `materializeGroups`, `getRow`, `findRowByTripleId`, `findRowByX`, and `toFullMatrix()`. Repeated `materializeGroup(g)` calls return the exact frozen cached array reference in $O(1)$. When `SPORN` (or `options.spornFacets`) is materialized before `GEOM`, `GEOM` directly reuses cached `sinA`/`cosA` references without recomputing `SpornFacet`.
 - **`buildFullClassMatrix(classification: RadiusClassificationResult, options?: BuildClassMatrixOptions): FullClassMatrixResult`**  
   Eagerly builds an immutable `FullClassMatrixResult` (`mode: 'FULL'`) using the exact same pure group evaluators as `LazyClassMatrix`, and validates `CM-INV-01..08`.
@@ -80,7 +81,7 @@ All signatures below match the actual TypeScript exports in `src/core/passports/
 - **`CM-INV-04`:** Geometric identities (`p = 3r + x + y = c + r`, `P = 2p`, `S = ab/2 = r * p`).
 - **`CM-INV-05`:** Arithmetic group (`gcdSides === k`, divisibility flags `aEven`, `div3Leg`, `div4Leg`, `div5Side`) and `EUCLID` correspondence (`{x0, y0} = {v², 2u²}`, `m = u + v`, `n = u`, `uv = r0`).
 - **`CM-INV-06`:** Exact rational `GEOM`/`SPORN` parity (`aDivC === sinA`, `bDivC === cosA`, and `asymQ = (b - a) / (a + b)` inherited from `M4-S1`, `Q1 = CLOSED`).
-- **`CM-INV-07`:** `BERGGREN` structural consistency (`treeLegSwapped === (parentOperator === 'A2' || parentOperator === 'A3')`, `canonWord <-> rawWord`, `treeDepth`, `appliesToPrimitiveAncestor`).
+- **`CM-INV-07` (`BERGGREN` mathematical identity):** Verifies not only internal consistency (`treeLegSwapped === (parentOperator === 'A2' || parentOperator === 'A3')`, `canonWord <-> rawWord` via `canonWordToRawWord`, `treeDepth`, `parentOperator`, `appliesToPrimitiveAncestor`, root equivalence `treeDepth === 0n <=> (3, 4, 5)`), but also exact reconstruction of the row's primitive ancestor `(a0, b0, c0, r0, x0, y0)` from `CORE` parameters using M4-S2 `applyCanonWord()` and `applyRawWord().canonTriple`.
 - **`CM-INV-08`:** `Full === Lazy` parity across all column groups and materialization orders (verified when `lazyCounterpart` is passed).
 
 ---

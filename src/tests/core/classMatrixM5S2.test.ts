@@ -14,6 +14,7 @@ import {
 } from '../../core/classification/index.ts';
 import {
   buildClassProfileFacet,
+  canonWordToRawWord,
   computeBerggrenFacetsForClass,
   computeSpornFacetsForClass,
 } from '../../core/facets/index.ts';
@@ -473,10 +474,23 @@ function freezeMutatedMatrix(m: any): FullClassMatrixResult {
   );
 }
 
-// CM-INV-07: BERGGREN consistency (wrong treeLegSwapped)
+// CM-INV-07: BERGGREN consistency (wrong treeLegSwapped + wrong but internally consistent canonWord/rawWord)
 {
   const m = cloneMatrixForMutation(r3Matrix);
   m.rows[0].berggren.treeLegSwapped = !m.rows[0].berggren.treeLegSwapped;
+  assert.throws(
+    () => verifyClassMatrixInvariants(freezeMutatedMatrix(m)),
+    (err: unknown) => err instanceof MatrixInvariantError && /CM-INV-07/.test(err.message)
+  );
+}
+{
+  const m = cloneMatrixForMutation(r6Matrix);
+  const targetRow = m.rows.find((row: any) => row.berggren.treeDepth >= 2n);
+  assert.ok(targetRow !== undefined);
+  const mutatedCanon = [...targetRow.berggren.canonWord];
+  mutatedCanon[0] = mutatedCanon[0] === 'A1' ? 'A2' : 'A1';
+  targetRow.berggren.canonWord = mutatedCanon;
+  targetRow.berggren.rawWord = [...canonWordToRawWord(mutatedCanon)];
   assert.throws(
     () => verifyClassMatrixInvariants(freezeMutatedMatrix(m)),
     (err: unknown) => err instanceof MatrixInvariantError && /CM-INV-07/.test(err.message)
@@ -616,6 +630,114 @@ assert.throws(
   );
 }
 console.log('✓ Section 4: All negative guards passed.');
+
+// ============================================================================
+// 4b. BERGGREN Validation Hardening Negative Tests (Audit Tests A–E)
+// ============================================================================
+const c6 = classifyRadius(6n);
+const r6BerggrenFacets = computeBerggrenFacetsForClass(c6);
+
+// Test A — Wrong but internally consistent Berggren word (treeDepth >= 2)
+{
+  const idx = r6BerggrenFacets.findIndex((f) => f.treeDepth >= 2n);
+  assert.ok(idx >= 0, 'Expected at least one Berggren facet with treeDepth >= 2 for r=6');
+  const orig = r6BerggrenFacets[idx];
+  const forgedCanonWord = [...orig.canonWord];
+  forgedCanonWord[0] = forgedCanonWord[0] === 'A1' ? 'A2' : 'A1';
+  const forgedRawWord = canonWordToRawWord(forgedCanonWord);
+
+  const forgedFacets = r6BerggrenFacets.map((f, i) =>
+    i === idx
+      ? Object.freeze({
+          ...f,
+          canonWord: Object.freeze(forgedCanonWord),
+          rawWord: forgedRawWord,
+        })
+      : f
+  );
+
+  assert.throws(
+    () => buildFullClassMatrix(c6, { berggrenFacets: forgedFacets }),
+    (err: unknown) => err instanceof MatrixInvariantError && /CM-INV-07/.test(err.message)
+  );
+}
+
+// Test B — Wrong primId (preserving tripleId, classId, r)
+{
+  const forgedFacets = r6BerggrenFacets.map((f, i) =>
+    i === 0 ? Object.freeze({ ...f, primId: 'PT-R999-K1-X999' }) : f
+  );
+  assert.throws(
+    () => createLazyClassMatrix(c6, { berggrenFacets: forgedFacets }),
+    (err: unknown) => err instanceof ClassMatrixError && err.code === 'FACET_CACHE_MISMATCH'
+  );
+  assert.throws(
+    () => buildFullClassMatrix(c6, { berggrenFacets: forgedFacets }),
+    (err: unknown) => err instanceof ClassMatrixError && err.code === 'FACET_CACHE_MISMATCH'
+  );
+}
+
+// Test C — Wrong scale factor k (preserving remaining IDs)
+{
+  const scaledIdx = r6BerggrenFacets.findIndex((f) => f.k > 1n);
+  assert.ok(scaledIdx >= 0, 'Expected scaled triple in r=6');
+  const forgedFacets = r6BerggrenFacets.map((f, i) =>
+    i === scaledIdx ? Object.freeze({ ...f, k: f.k + 1n }) : f
+  );
+  assert.throws(
+    () => createLazyClassMatrix(c6, { berggrenFacets: forgedFacets }),
+    (err: unknown) => err instanceof ClassMatrixError && err.code === 'FACET_CACHE_MISMATCH'
+  );
+  assert.throws(
+    () => buildFullClassMatrix(c6, { berggrenFacets: forgedFacets }),
+    (err: unknown) => err instanceof ClassMatrixError && err.code === 'FACET_CACHE_MISMATCH'
+  );
+}
+
+// Test D — Wrong primitiveAncestor field (preserving tripleId, classId, primId, r)
+{
+  const forgedFacets = r6BerggrenFacets.map((f, i) =>
+    i === 0
+      ? Object.freeze({
+          ...f,
+          primitiveAncestor: Object.freeze({
+            ...f.primitiveAncestor,
+            a: f.primitiveAncestor.a + 1n,
+          }),
+        })
+      : f
+  );
+  assert.throws(
+    () => createLazyClassMatrix(c6, { berggrenFacets: forgedFacets }),
+    (err: unknown) => err instanceof ClassMatrixError && err.code === 'FACET_CACHE_MISMATCH'
+  );
+  assert.throws(
+    () => buildFullClassMatrix(c6, { berggrenFacets: forgedFacets }),
+    (err: unknown) => err instanceof ClassMatrixError && err.code === 'FACET_CACHE_MISMATCH'
+  );
+}
+
+// Test E — Wrong appliesToPrimitiveAncestor
+{
+  const forgedFacets = r6BerggrenFacets.map((f, i) =>
+    i === 0
+      ? Object.freeze({
+          ...f,
+          appliesToPrimitiveAncestor: !f.appliesToPrimitiveAncestor,
+        })
+      : f
+  );
+  assert.throws(
+    () => createLazyClassMatrix(c6, { berggrenFacets: forgedFacets }),
+    (err: unknown) => err instanceof ClassMatrixError && err.code === 'FACET_CACHE_MISMATCH'
+  );
+  assert.throws(
+    () => buildFullClassMatrix(c6, { berggrenFacets: forgedFacets }),
+    (err: unknown) => err instanceof ClassMatrixError && err.code === 'FACET_CACHE_MISMATCH'
+  );
+}
+
+console.log('✓ Section 4b: Audit BERGGREN hardening negative Tests A–E passed.');
 
 // ============================================================================
 // 5. Range Sweep: r = 1..50 (Full === Lazy, CM-INV-01..08, Passport Parity)

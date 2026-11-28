@@ -15,11 +15,16 @@ import type {
   RadiusClassificationResult,
 } from '../classification/index.ts';
 import {
+  applyCanonWord,
+  applyRawWord,
   canonWordToRawWord,
   classifySpornZone,
   computeBerggrenFacetsForClass,
   computeSpornFacetsForClass,
+  verifyBerggrenFacetInvariants,
+  verifySpornFacetInvariants,
   type BerggrenFacetResult,
+  type PrimitiveTripleState,
   type SpornFacetResult,
 } from '../facets/index.ts';
 import {
@@ -254,12 +259,90 @@ function validateClassificationAndBuildCore(
   };
 }
 
+function validateSpornFacetCacheEntry(
+  facet: SpornFacetResult,
+  triple: PythagoreanTriple
+): void {
+  if (
+    facet.tripleId !== triple.tripleId ||
+    facet.classId !== triple.classId ||
+    facet.r !== triple.r ||
+    facet.primId !== triple.primId ||
+    facet.k !== triple.k ||
+    facet.isPrimitive !== triple.isPrimitive ||
+    facet.x !== triple.x ||
+    facet.y !== triple.y
+  ) {
+    throw new ClassMatrixError(
+      'FACET_CACHE_MISMATCH',
+      `spornFacets entry ${facet.tripleId} identity or shifts disagree with M3 triple ${triple.tripleId}`
+    );
+  }
+  try {
+    verifySpornFacetInvariants(facet);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    throw new ClassMatrixError(
+      'FACET_CACHE_MISMATCH',
+      `spornFacets entry ${facet.tripleId} failed M4-S1 invariant check: ${msg}`
+    );
+  }
+}
+
+function validateBerggrenFacetCacheEntry(
+  facet: BerggrenFacetResult,
+  triple: PythagoreanTriple
+): void {
+  const paFacet = facet.primitiveAncestor;
+  const paTriple = triple.primitiveAncestor;
+  if (
+    facet.tripleId !== triple.tripleId ||
+    facet.classId !== triple.classId ||
+    facet.r !== triple.r ||
+    facet.primId !== triple.primId ||
+    facet.k !== triple.k ||
+    facet.isPrimitive !== triple.isPrimitive ||
+    facet.appliesToPrimitiveAncestor !== !triple.isPrimitive ||
+    typeof paFacet !== 'object' ||
+    paFacet === null ||
+    paFacet.a !== paTriple.a ||
+    paFacet.b !== paTriple.b ||
+    paFacet.c !== paTriple.c ||
+    paFacet.x !== paTriple.x ||
+    paFacet.y !== paTriple.y ||
+    paFacet.r !== triple.primitiveRadius
+  ) {
+    throw new ClassMatrixError(
+      'FACET_CACHE_MISMATCH',
+      `berggrenFacets entry ${facet.tripleId} identity, scale, or primitiveAncestor disagrees with M3 triple ${triple.tripleId}`
+    );
+  }
+
+  try {
+    verifyBerggrenFacetInvariants(facet);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes('word reconstruction mismatch')) {
+      throw new MatrixInvariantError(
+        'CM-INV-07',
+        `Berggren facet cache word reconstruction failed for ${facet.tripleId}: ${msg}`
+      );
+    }
+    throw new ClassMatrixError(
+      'FACET_CACHE_MISMATCH',
+      `berggrenFacets entry ${facet.tripleId} failed M4-S2 invariant check: ${msg}`
+    );
+  }
+}
+
 function indexFacetCache<T extends { readonly tripleId: string; readonly classId: string; readonly r: bigint }>(
   facets: readonly T[],
   label: string,
   classId: string,
   r: bigint,
-  tripleIdToIndex: ReadonlyMap<string, number>
+  triples: readonly PythagoreanTriple[],
+  tripleIdToIndex: ReadonlyMap<string, number>,
+  validateEntry?: (facet: T, triple: PythagoreanTriple) => void
 ): readonly T[] {
   if (facets.length !== tripleIdToIndex.size) {
     throw new ClassMatrixError(
@@ -290,6 +373,9 @@ function indexFacetCache<T extends { readonly tripleId: string; readonly classId
         'FACET_CACHE_MISMATCH',
         `${label} cache contains unknown tripleId "${facet.tripleId}" for ${classId}`
       );
+    }
+    if (validateEntry !== undefined) {
+      validateEntry(facet, triples[idx]);
     }
     seen.add(facet.tripleId);
     aligned[idx] = facet;
@@ -501,7 +587,9 @@ export function createLazyClassMatrix(
           'spornFacets',
           classId,
           r,
-          tripleIdToIndex
+          triples,
+          tripleIdToIndex,
+          validateSpornFacetCacheEntry
         )
       : null;
 
@@ -512,7 +600,9 @@ export function createLazyClassMatrix(
           'berggrenFacets',
           classId,
           r,
-          tripleIdToIndex
+          triples,
+          tripleIdToIndex,
+          validateBerggrenFacetCacheEntry
         )
       : null;
 
@@ -526,7 +616,9 @@ export function createLazyClassMatrix(
         'spornFacets',
         classId,
         r,
-        tripleIdToIndex
+        triples,
+        tripleIdToIndex,
+        validateSpornFacetCacheEntry
       );
     }
     return alignedSpornCache;
@@ -540,7 +632,9 @@ export function createLazyClassMatrix(
         'berggrenFacets',
         classId,
         r,
-        tripleIdToIndex
+        triples,
+        tripleIdToIndex,
+        validateBerggrenFacetCacheEntry
       );
     }
     return alignedBerggrenCache;
@@ -1212,8 +1306,11 @@ export function verifyClassMatrixInvariants(
       );
     }
 
-    // CM-INV-07: BERGGREN structural consistency
+    // CM-INV-07: BERGGREN mathematical identity & structural consistency
     const { berggren } = row;
+    const a0: bigint = 2n * r0 + x0;
+    const b0: bigint = 2n * r0 + y0;
+    const c0: bigint = 2n * r0 + x0 + y0;
     const expectedParentOp =
       berggren.canonWord.length === 0
         ? null
@@ -1222,10 +1319,13 @@ export function verifyClassMatrixInvariants(
     const rawWordMatches =
       expectedRawWord.length === berggren.rawWord.length &&
       expectedRawWord.every((op, idx) => op === berggren.rawWord[idx]);
-    const isRootPrimitive = x0 === 1n && y0 === 2n;
+    const isRootPrimitive =
+      a0 === 3n && b0 === 4n && c0 === 5n && r0 === 1n && x0 === 1n && y0 === 2n;
+
     if (
       berggren.appliesToPrimitiveAncestor !== !row.isPrimitive ||
       berggren.treeDepth !== BigInt(berggren.canonWord.length) ||
+      berggren.treeDepth !== BigInt(berggren.rawWord.length) ||
       !rawWordMatches ||
       berggren.parentOperator !== expectedParentOp ||
       berggren.treeLegSwapped !==
@@ -1234,7 +1334,40 @@ export function verifyClassMatrixInvariants(
     ) {
       throw new MatrixInvariantError(
         'CM-INV-07',
-        `BERGGREN group mismatch at ${row.tripleId}`
+        `BERGGREN structural consistency mismatch at ${row.tripleId}`
+      );
+    }
+
+    let rebuiltFromCanon: PrimitiveTripleState;
+    let rebuiltFromRawCanon: PrimitiveTripleState;
+    try {
+      rebuiltFromCanon = applyCanonWord(berggren.canonWord);
+      rebuiltFromRawCanon = applyRawWord(berggren.rawWord).canonTriple;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      throw new MatrixInvariantError(
+        'CM-INV-07',
+        `BERGGREN word evaluation failed at ${row.tripleId}: ${msg}`
+      );
+    }
+
+    if (
+      rebuiltFromCanon.a !== a0 ||
+      rebuiltFromCanon.b !== b0 ||
+      rebuiltFromCanon.c !== c0 ||
+      rebuiltFromCanon.r !== r0 ||
+      rebuiltFromCanon.x !== x0 ||
+      rebuiltFromCanon.y !== y0 ||
+      rebuiltFromRawCanon.a !== a0 ||
+      rebuiltFromRawCanon.b !== b0 ||
+      rebuiltFromRawCanon.c !== c0 ||
+      rebuiltFromRawCanon.r !== r0 ||
+      rebuiltFromRawCanon.x !== x0 ||
+      rebuiltFromRawCanon.y !== y0
+    ) {
+      throw new MatrixInvariantError(
+        'CM-INV-07',
+        `BERGGREN word does not reconstruct primitive ancestor (${a0.toString()}, ${b0.toString()}, ${c0.toString()}) at ${row.tripleId}`
       );
     }
 
